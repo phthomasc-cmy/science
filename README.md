@@ -36,8 +36,7 @@
     <h1>Choose an Effect</h1>
 
     <div class="link-box">
-        <a href="Rheostatsimulator.html">➜ S2 Rheostat simulator.html</a>
-        <a href="Watertreatment.html">➜ S1 Water treatment.html</a>
+                <a href="watertreatment.html">➜ S1 Water treatment.html</a>
     </div>
 
 </body>
