@@ -1,0 +1,348 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Advanced Litmus Lab - Red vs Blue</title>
+    <style>
+        :root {
+            --litmus-red: #ff8585;
+            --litmus-blue: #85a3ff;
+            --acid-deep: #ff0000;
+            --base-deep: #0022ff;
+        }
+
+        body {
+            font-family: 'Segoe UI', sans-serif;
+            background: #eef2f3;
+            display: flex;
+            flex-direction: column;
+            align-items: center;
+            padding: 20px;
+        }
+
+        .lab-container {
+            display: flex;
+            gap: 20px;
+            background: white;
+            padding: 25px;
+            border-radius: 15px;
+            box-shadow: 0 10px 25px rgba(0,0,0,0.1);
+            max-width: 1000px;
+            width: 100%;
+        }
+
+        /* --- UI Controls --- */
+        .sidebar {
+            flex: 1;
+            display: flex;
+            flex-direction: column;
+            gap: 15px;
+        }
+
+        .selector-group {
+            background: #f8f9fa;
+            padding: 15px;
+            border-radius: 10px;
+            border-left: 5px solid #3498db;
+        }
+
+        .paper-toggle {
+            display: flex;
+            gap: 10px;
+            margin-top: 10px;
+        }
+
+        .paper-btn {
+            flex: 1;
+            padding: 8px;
+            border: 2px solid #ddd;
+            cursor: pointer;
+            border-radius: 5px;
+            font-weight: bold;
+            text-align: center;
+        }
+
+        .paper-btn.active-red { background: var(--litmus-red); border-color: #a00; color: white; }
+        .paper-btn.active-blue { background: var(--litmus-blue); border-color: #00a; color: white; }
+
+        /* --- Lab Area --- */
+        .lab-bench {
+            flex: 2;
+            height: 400px;
+            position: relative;
+            border-bottom: 4px solid #95a5a6;
+            background: linear-gradient(to bottom, #fff 80%, #f1f1f1 100%);
+            overflow: hidden;
+        }
+
+        .beaker {
+            position: absolute;
+            bottom: 0;
+            left: 50%;
+            transform: translateX(-50%);
+            width: 160px;
+            height: 200px;
+            border: 4px solid #bdc3c7;
+            border-top: none;
+            border-bottom-left-radius: 15px;
+            border-bottom-right-radius: 15px;
+            z-index: 2;
+        }
+
+        .liquid {
+            position: absolute;
+            bottom: 0;
+            width: 100%;
+            height: 70%;
+            background: rgba(52, 152, 219, 0.4);
+            transition: background 0.5s;
+        }
+
+        #litmus-strip {
+            width: 35px;
+            height: 140px;
+            position: absolute;
+            top: 50px;
+            left: 50px;
+            cursor: grab;
+            box-shadow: 2px 5px 10px rgba(0,0,0,0.2);
+            z-index: 10;
+            display: flex;
+            justify-content: center;
+            align-items: center;
+            font-size: 10px;
+            font-weight: bold;
+            color: rgba(0,0,0,0.3);
+            user-select: none;
+        }
+
+        /* --- Microscopic View --- */
+        .micro-container {
+            flex: 1;
+            text-align: center;
+        }
+
+        #micro-canvas {
+            width: 200px;
+            height: 200px;
+            border: 5px solid #2c3e50;
+            border-radius: 50%;
+            background: white;
+            box-shadow: inset 0 0 20px rgba(0,0,0,0.1);
+        }
+
+        .status-box {
+            margin-top: 20px;
+            padding: 15px;
+            background: #2c3e50;
+            color: #ecf0f1;
+            border-radius: 8px;
+            min-height: 50px;
+        }
+
+        button.reset-btn {
+            margin-top: auto;
+            padding: 10px;
+            background: #e74c3c;
+            color: white;
+            border: none;
+            border-radius: 5px;
+            cursor: pointer;
+        }
+    </style>
+</head>
+<body>
+
+    <h1>Interactive Litmus Simulator</h1>
+
+    <div class="lab-container">
+        <!-- Sidebar -->
+        <div class="sidebar">
+            <div class="selector-group">
+                <label><b>1. Select Substance:</b></label><br><br>
+                <select id="substance" style="width:100%; padding:5px;">
+                    <option value="2" data-name="Lemon Juice (Acid)">Lemon Juice</option>
+                    <option value="4" data-name="Tomato Sauce (Acid)">Tomato Sauce</option>
+                    <option value="7" data-name="Distilled Water (Neutral)">Pure Water</option>
+                    <option value="10" data-name="Hand Soap (Base)">Hand Soap</option>
+                    <option value="13" data-name="Bleach (Strong Base)">Bleach</option>
+                </select>
+            </div>
+
+            <div class="selector-group">
+                <label><b>2. Select Paper Type:</b></label>
+                <div class="paper-toggle">
+                    <div id="btn-red" class="paper-btn active-red" onclick="changePaper('red')">RED</div>
+                    <div id="btn-blue" class="paper-btn" onclick="changePaper('blue')">BLUE</div>
+                </div>
+            </div>
+
+            <button class="reset-btn" onclick="resetLab()">Reset Experiment</button>
+        </div>
+
+        <!-- Main Bench -->
+        <div class="lab-bench" id="lab-bench">
+            <div id="litmus-strip">LITMUS</div>
+            
+            <div class="beaker">
+                <div id="liquid-fill" class="liquid"></div>
+            </div>
+        </div>
+
+        <!-- Micro View -->
+        <div class="micro-container">
+            <b>Microscopic Ion View</b>
+            <canvas id="micro-canvas" width="200" height="200"></canvas>
+            <div class="status-box" id="feedback">
+                Drag the paper into the liquid!
+            </div>
+        </div>
+    </div>
+
+    <script>
+        const strip = document.getElementById('litmus-strip');
+        const bench = document.getElementById('lab-bench');
+        const substanceSelect = document.getElementById('substance');
+        const feedback = document.getElementById('feedback');
+        const canvas = document.getElementById('micro-canvas');
+        const ctx = canvas.getContext('2d');
+
+        let currentPaperColor = 'red'; // 'red' or 'blue'
+        let isDipped = false;
+        let ions = [];
+
+        // --- Initialize Paper ---
+        function changePaper(type) {
+            currentPaperColor = type;
+            document.getElementById('btn-red').className = 'paper-btn' + (type === 'red' ? ' active-red' : '');
+            document.getElementById('btn-blue').className = 'paper-btn' + (type === 'blue' ? ' active-blue' : '');
+            resetStripPosition();
+        }
+
+        function resetStripPosition() {
+            isDipped = false;
+            strip.style.top = '50px';
+            strip.style.left = '50px';
+            strip.style.background = currentPaperColor === 'red' ? 'var(--litmus-red)' : 'var(--litmus-blue)';
+            feedback.innerText = "Test the " + substanceSelect.options[substanceSelect.selectedIndex].text;
+        }
+
+        // --- Dragging Logic ---
+        let isDragging = false;
+        strip.addEventListener('mousedown', () => isDragging = true);
+        window.addEventListener('mouseup', () => {
+            isDragging = false;
+            checkDip();
+        });
+        window.addEventListener('mousemove', (e) => {
+            if (!isDragging) return;
+            const rect = bench.getBoundingClientRect();
+            strip.style.left = (e.clientX - rect.left - 17) + 'px';
+            strip.style.top = (e.clientY - rect.top - 70) + 'px';
+        });
+
+        function checkDip() {
+            const stripRect = strip.getBoundingClientRect();
+            const liquidRect = document.getElementById('liquid-fill').getBoundingClientRect();
+
+            if (stripRect.bottom > liquidRect.top && 
+                stripRect.left > liquidRect.left && 
+                stripRect.right < liquidRect.right) {
+                
+                performReaction();
+            }
+        }
+
+        function performReaction() {
+            const ph = parseInt(substanceSelect.value);
+            isDipped = true;
+
+            if (currentPaperColor === 'red') {
+                if (ph > 7) {
+                    strip.style.background = 'var(--litmus-blue)';
+                    feedback.innerText = "Result: Red paper turned BLUE. (Base detected)";
+                } else {
+                    feedback.innerText = "Result: Stays RED. (Acid or Neutral)";
+                }
+            } else {
+                if (ph < 7) {
+                    strip.style.background = 'var(--litmus-red)';
+                    feedback.innerText = "Result: Blue paper turned RED. (Acid detected)";
+                } else {
+                    feedback.innerText = "Result: Stays BLUE. (Base or Neutral)";
+                }
+            }
+        }
+
+        // --- Particle Engine ---
+        class Ion {
+            constructor(type) {
+                this.type = type; // 'h' or 'oh'
+                this.radius = 6;
+                this.x = Math.random() * (canvas.width - 20) + 10;
+                this.y = Math.random() * (canvas.height - 20) + 10;
+                this.vx = (Math.random() - 0.5) * 2;
+                this.vy = (Math.random() - 0.5) * 2;
+            }
+
+            draw() {
+                ctx.beginPath();
+                ctx.arc(this.x, this.y, this.radius, 0, Math.PI * 2);
+                ctx.fillStyle = this.type === 'h' ? '#ff4d4d' : '#4d79ff';
+                ctx.fill();
+                ctx.fillStyle = "white";
+                ctx.font = "bold 8px Arial";
+                ctx.fillText(this.type === 'h' ? 'H+' : 'OH-', this.x - 5, this.y + 3);
+                ctx.closePath();
+            }
+
+            update() {
+                this.x += this.vx;
+                this.y += this.vy;
+
+                // Circular Boundary Check
+                const dist = Math.sqrt((this.x - 100)**2 + (this.y - 100)**2);
+                if (dist > 90) {
+                    this.vx *= -1;
+                    this.vy *= -1;
+                }
+                this.draw();
+            }
+        }
+
+        function updateIons() {
+            ions = [];
+            const ph = parseInt(substanceSelect.value);
+            // More H+ for acid (low pH), more OH- for base (high pH)
+            const hCount = Math.max(1, 14 - ph);
+            const ohCount = Math.max(1, ph);
+
+            for(let i=0; i<hCount; i++) ions.push(new Ion('h'));
+            for(let i=0; i<ohCount; i++) ions.push(new Ion('oh'));
+        }
+
+        function animate() {
+            ctx.clearRect(0, 0, canvas.width, canvas.height);
+            ions.forEach(ion => ion.update());
+            requestAnimationFrame(animate);
+        }
+
+        substanceSelect.addEventListener('change', () => {
+            updateIons();
+            resetStripPosition();
+        });
+
+        function resetLab() {
+            substanceSelect.value = "7";
+            changePaper('red');
+            updateIons();
+        }
+
+        // Start Lab
+        resetStripPosition();
+        updateIons();
+        animate();
+    </script>
+</body>
+</html>
