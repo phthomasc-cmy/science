@@ -33,10 +33,11 @@
 </head>
 <body>
 
-    <h1>Choose an Effect</h1>
+    <h1>Choose One</h1>
 
     <div class="link-box">
-                <a href="watertreatment.html">➜ S1 Water treatment.html</a>
+                <a href="watertreatment.html">➜ S1 Water treatment</a>
+                <a href="acidalkalimatch.html">➜ S2 Match the acid and alkali</a>
     </div>
 
 </body>
