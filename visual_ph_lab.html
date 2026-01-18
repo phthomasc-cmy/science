@@ -1,0 +1,336 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>pH Discovery Lab - High Visibility</title>
+    <style>
+        :root {
+            --bg: #f8fafc;
+            --panel: #ffffff;
+            --primary: #2563eb;
+            --text-main: #1e293b;
+        }
+
+        body {
+            font-family: 'Segoe UI', system-ui, sans-serif;
+            background-color: var(--bg);
+            margin: 0;
+            display: flex;
+            flex-direction: column;
+            align-items: center;
+            color: var(--text-main);
+            padding-bottom: 50px;
+        }
+
+        h1 { margin: 20px 0 5px 0; font-size: 2rem; color: #0f172a; }
+        .subtitle { margin-bottom: 15px; font-size: 1rem; color: #64748b; }
+
+        /* Compact Arch Scale - Improved for Number Visibility */
+        .scale-container {
+            position: relative;
+            width: 550px; 
+            height: 280px; 
+            margin-bottom: 10px;
+            display: flex;
+            justify-content: center;
+            align-items: flex-end;
+            /* Remove overflow hidden to ensure numbers at edges aren't cut */
+        }
+
+        .arch {
+            position: absolute;
+            width: 480px;
+            height: 480px;
+            border-radius: 50%;
+            clip-path: inset(0 0 50% 0);
+            bottom: -240px;
+            display: flex;
+            justify-content: center;
+        }
+
+        .segment {
+            position: absolute;
+            width: 45px; /* Narrower width to prevent overlap at the center */
+            height: 240px;
+            bottom: 240px;
+            transform-origin: bottom center;
+            display: flex;
+            flex-direction: column;
+            align-items: center;
+            font-weight: 900;
+            padding-top: 8px; /* Push number slightly down from the very edge */
+            transition: 0.3s cubic-bezier(0.175, 0.885, 0.32, 1.275);
+            border: 1px solid rgba(0,0,0,0.05);
+            font-size: 1.2rem;
+            box-sizing: border-box;
+        }
+
+        /* Highlight the active pH value */
+        .segment.active {
+            transform: scale(1.15) !important;
+            z-index: 100;
+            box-shadow: 0 0 20px rgba(0,0,0,0.4);
+            border: 3px solid #000;
+            border-radius: 5px;
+        }
+
+        /* Lab Area Layout */
+        .lab-area {
+            display: flex;
+            flex-direction: column;
+            gap: 20px;
+            background: var(--panel);
+            padding: 30px;
+            border-radius: 24px;
+            box-shadow: 0 15px 25px -5px rgba(0,0,0,0.1);
+            width: 95%;
+            max-width: 1000px;
+        }
+
+        .shelf-container {
+            border-bottom: 2px solid #e2e8f0;
+            padding-bottom: 20px;
+        }
+        
+        .shelf-title {
+            font-weight: bold;
+            font-size: 1.1rem;
+            margin-bottom: 12px;
+            color: #475569;
+            text-transform: uppercase;
+        }
+
+        .shelf {
+            display: grid;
+            grid-template-columns: repeat(auto-fill, minmax(170px, 1fr));
+            gap: 12px;
+        }
+
+        .item-card {
+            background: #fff;
+            border: 2px solid #e2e8f0;
+            border-radius: 12px;
+            padding: 15px 10px;
+            cursor: pointer;
+            text-align: center;
+            font-size: 1.15rem;
+            font-weight: 700;
+            transition: all 0.2s;
+        }
+
+        .item-card:hover { border-color: var(--primary); background: #eff6ff; }
+        .item-card.selected { background: var(--primary); color: white; border-color: #1e40af; }
+
+        .testing-row {
+            display: flex;
+            justify-content: space-around;
+            align-items: center;
+            padding-top: 10px;
+        }
+
+        .beaker {
+            width: 140px;
+            height: 170px;
+            border: 5px solid #64748b;
+            border-top: none;
+            border-radius: 0 0 25px 25px;
+            position: relative;
+            background: rgba(255,255,255,0.8);
+            overflow: hidden;
+        }
+
+        .liquid {
+            position: absolute;
+            bottom: 0;
+            width: 100%;
+            height: 0%;
+            transition: height 0.6s ease-out, background 0.4s;
+        }
+
+        .info-panel {
+            flex: 1;
+            max-width: 350px;
+            background: #f1f5f9;
+            padding: 20px;
+            border-radius: 16px;
+            text-align: center;
+        }
+
+        #item-name { font-size: 1.8rem; display: block; margin-bottom: 8px; font-weight: 800; }
+        #item-desc { font-size: 1.4rem; font-weight: 700; }
+
+        .ph-paper-source {
+            width: 50px;
+            height: 160px;
+            background: #fde68a;
+            cursor: grab;
+            border-radius: 4px;
+            box-shadow: 4px 4px 15px rgba(0,0,0,0.15);
+            border: 1px solid rgba(0,0,0,0.1);
+            position: relative;
+            z-index: 50;
+            touch-action: none;
+        }
+
+        .btn-reset {
+            margin-top: 20px;
+            padding: 12px 35px;
+            font-size: 1.1rem;
+            font-weight: bold;
+            background: #1e293b;
+            color: white;
+            border: none;
+            border-radius: 10px;
+            cursor: pointer;
+        }
+    </style>
+</head>
+<body>
+
+    <h1>Virtual pH Indicator Lab</h1>
+    <p class="subtitle">Select a substance then dip the paper to reveal the pH value</p>
+
+    <!-- Rainbow Scale -->
+    <div class="scale-container">
+        <div class="arch" id="arch"></div>
+    </div>
+
+    <div class="lab-area">
+        <div class="shelf-container">
+            <div class="shelf-title">Substances to test</div>
+            <div class="shelf" id="shelf"></div>
+        </div>
+
+        <div class="testing-row">
+            <div id="paper" class="ph-paper-source"></div>
+
+            <div class="beaker">
+                <div id="liquid" class="liquid"></div>
+            </div>
+
+            <div class="info-panel">
+                <span id="item-name">Pick a Sample</span>
+                <div id="item-desc">Ready for testing...</div>
+            </div>
+        </div>
+    </div>
+
+    <button class="btn-reset" onclick="location.reload()">Reset Experiment</button>
+
+    <script>
+        const data = [
+            { ph: 0, name: "Battery Acid", color: "#e61a1a", text: "white" },
+            { ph: 1, name: "Stomach Acid", color: "#ff4d00", text: "white" },
+            { ph: 2, name: "Lemon Juice", color: "#ff8c00", text: "white" },
+            { ph: 3, name: "Orange Juice", color: "#ffcc00", text: "black" },
+            { ph: 4, name: "Tomato Juice", color: "#ffff00", text: "black" },
+            { ph: 5, name: "Black Coffee", color: "#ccff00", text: "black" },
+            { ph: 6, name: "Milk", color: "#66ff00", text: "black" },
+            { ph: 7, name: "Pure Water", color: "#00ff00", text: "black" },
+            { ph: 8, name: "Seawater", color: "#00ff80", text: "black" },
+            { ph: 9, name: "Baking Soda", color: "#00ffff", text: "black" },
+            { ph: 10, name: "Antacid", color: "#0080ff", text: "white" },
+            { ph: 11, name: "Glass Cleaner", color: "#0000ff", text: "white" },
+            { ph: 12, name: "Soap Solution", color: "#4b0082", text: "white" },
+            { ph: 13, name: "Bleach", color: "#8b00ff", text: "white" },
+            { ph: 14, name: "Drain Cleaner", color: "#46008b", text: "white" }
+        ];
+
+        const arch = document.getElementById('arch');
+        const shelf = document.getElementById('shelf');
+        const liquid = document.getElementById('liquid');
+        const itemName = document.getElementById('item-name');
+        const itemDesc = document.getElementById('item-desc');
+        const paper = document.getElementById('paper');
+
+        let currentPHIdx = null;
+
+        // Generate the Scale
+        data.forEach((item, i) => {
+            // Spread 15 items across exactly 180 degrees
+            // Using -84 to 84 to keep the end numbers away from the absolute horizontal edge
+            const angle = -84 + (i * 12); 
+            const seg = document.createElement('div');
+            seg.className = 'segment';
+            seg.id = `seg-${i}`;
+            seg.style.backgroundColor = item.color;
+            seg.style.color = item.text; // Use pre-defined high contrast text color
+            seg.style.transform = `rotate(${angle}deg)`;
+            seg.innerHTML = `<span>${item.ph}</span>`;
+            arch.appendChild(seg);
+
+            // Generate Substance Card
+            const card = document.createElement('div');
+            card.className = 'item-card';
+            card.innerHTML = item.name;
+            card.onclick = () => {
+                currentPHIdx = i;
+                liquid.style.height = "75%";
+                liquid.style.background = item.color + "33"; // 20% opacity
+                itemName.innerText = item.name;
+                itemDesc.innerText = "Dip the paper...";
+                itemDesc.style.color = "#64748b";
+                
+                paper.style.backgroundColor = '#fde68a';
+                paper.style.position = 'relative';
+                paper.style.left = '0'; paper.style.top = '0';
+                
+                document.querySelectorAll('.segment').forEach(s => s.classList.remove('active'));
+                document.querySelectorAll('.item-card').forEach(c => c.classList.remove('selected'));
+                card.classList.add('selected');
+            };
+            shelf.appendChild(card);
+        });
+
+        // Interactive Paper Logic
+        let offset = { x: 0, y: 0 };
+        paper.onmousedown = startDrag;
+        paper.ontouchstart = startDrag;
+
+        function startDrag(e) {
+            const ev = e.touches ? e.touches[0] : e;
+            const rect = paper.getBoundingClientRect();
+            offset.x = ev.clientX - rect.left;
+            offset.y = ev.clientY - rect.top;
+            document.onmousemove = doDrag;
+            document.ontouchmove = doDrag;
+            document.onmouseup = stopDrag;
+            document.ontouchend = stopDrag;
+        }
+
+        function doDrag(e) {
+            const ev = e.touches ? e.touches[0] : e;
+            paper.style.position = 'fixed';
+            paper.style.left = (ev.clientX - offset.x) + 'px';
+            paper.style.top = (ev.clientY - offset.y) + 'px';
+            
+            if (currentPHIdx === null) return;
+            const pRect = paper.getBoundingClientRect();
+            const lRect = liquid.getBoundingClientRect();
+
+            // Collision check with liquid
+            if (pRect.bottom > lRect.top + 20 && pRect.left < lRect.right && pRect.right > lRect.left) {
+                const info = data[currentPHIdx];
+                paper.style.backgroundColor = info.color;
+                
+                document.querySelectorAll('.segment').forEach(s => s.classList.remove('active'));
+                const activeSeg = document.getElementById(`seg-${currentPHIdx}`);
+                activeSeg.classList.add('active');
+                
+                let type = "Neutral";
+                if(info.ph < 7) type = "Acidic";
+                if(info.ph > 7) type = "Alkaline";
+
+                itemDesc.innerHTML = `${type}<br>(pH ${info.ph})`;
+                itemDesc.style.color = info.color === "#ffff00" ? "#999900" : info.color; 
+            }
+        }
+
+        function stopDrag() {
+            document.onmousemove = null;
+            document.ontouchmove = null;
+        }
+    </script>
+</body>
+</html>
