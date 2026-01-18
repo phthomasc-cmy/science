@@ -1,0 +1,298 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>pH Lab: Image & Translation Challenge</title>
+    <style>
+        :root {
+            --acid: #ff4d4d;
+            --neutral: #4CAF50;
+            --alkaline: #4d79ff;
+            --bg: #f8f9fa;
+        }
+
+        body {
+            font-family: 'Segoe UI', Arial, sans-serif;
+            background-color: #e9ecef;
+            margin: 0;
+            display: flex;
+            flex-direction: column;
+            align-items: center;
+            padding: 20px;
+        }
+
+        /* --- Inspection Window (The Popup) --- */
+        #inspection-window {
+            position: fixed;
+            top: 20px;
+            right: 20px;
+            width: 250px;
+            background: white;
+            border: 3px solid #333;
+            border-radius: 15px;
+            padding: 15px;
+            box-shadow: 0 10px 30px rgba(0,0,0,0.3);
+            z-index: 100;
+            display: none; /* Shown on hover */
+            text-align: center;
+        }
+
+        #inspection-window img {
+            width: 100%;
+            border-radius: 8px;
+            margin-bottom: 10px;
+            border: 1px solid #ddd;
+        }
+
+        .translation-tag {
+            background: #333;
+            color: yellow;
+            padding: 5px;
+            font-weight: bold;
+            display: block;
+            margin-bottom: 5px;
+            border-radius: 4px;
+        }
+
+        /* --- Main UI --- */
+        .game-header { text-align: center; margin-bottom: 20px; }
+
+        #word-bank {
+            background: white;
+            border: 2px dashed #999;
+            border-radius: 12px;
+            padding: 20px;
+            width: 90%;
+            max-width: 1000px;
+            display: flex;
+            flex-wrap: wrap;
+            gap: 12px;
+            justify-content: center;
+            margin-bottom: 30px;
+        }
+
+        .draggable {
+            background: white;
+            border: 2px solid #666;
+            padding: 10px 15px;
+            border-radius: 8px;
+            cursor: grab;
+            font-weight: bold;
+            transition: all 0.2s;
+        }
+
+        .draggable:hover {
+            background: #fff3cd;
+            transform: scale(1.05);
+            border-color: #ffc107;
+        }
+
+        .drop-container {
+            display: flex;
+            gap: 20px;
+            width: 100%;
+            max-width: 1200px;
+            justify-content: center;
+            flex-wrap: wrap;
+        }
+
+        .bucket {
+            flex: 1;
+            min-width: 300px;
+            min-height: 400px;
+            background: #fff;
+            border-radius: 20px;
+            padding: 15px;
+            display: flex;
+            flex-direction: column;
+            border: 4px solid #ccc;
+        }
+
+        .bucket h2 { text-align: center; margin-top: 0; padding-bottom: 10px; border-bottom: 2px solid #eee; }
+
+        #acidic-zone { border-color: var(--acid); background-color: #fff5f5; }
+        #neutral-zone { border-color: var(--neutral); background-color: #f5fff5; }
+        #alkaline-zone { border-color: var(--alkaline); background-color: #f5f5ff; }
+
+        .drop-area { flex-grow: 1; display: flex; flex-wrap: wrap; gap: 10px; align-content: flex-start; padding: 10px; }
+
+        /* Validation Colors */
+        .correct { background-color: #28a745 !important; color: white; border-color: #1e7e34; }
+        .incorrect { background-color: #dc3545 !important; color: white; border-color: #bd2130; }
+
+        .controls { margin-top: 30px; display: flex; gap: 20px; }
+        button { padding: 15px 40px; font-size: 1.1rem; cursor: pointer; border-radius: 10px; border: none; font-weight: bold; }
+        #submit-btn { background: #333; color: white; }
+        #reset-btn { background: #ccc; }
+
+        #final-msg { margin-top: 20px; font-size: 1.5rem; font-weight: bold; }
+    </style>
+</head>
+<body>
+
+    <div class="game-header">
+        <h1>Advanced pH Sorting Station</h1>
+        <p>Drag substances to the correct bucket. <b>Hover over a word to see its image and translation!</b></p>
+    </div>
+
+    <!-- The Hover Info Window -->
+    <div id="inspection-window">
+        <div class="translation-tag" id="pop-chinese">---</div>
+        <img id="pop-img" src="" alt="Substance Image">
+        <div id="pop-english" style="font-weight: bold;">Substance Name</div>
+        <small id="pop-desc" style="color: #666;"></small>
+    </div>
+
+    <div id="word-bank" ondrop="drop(event)" ondragover="allowDrop(event)"></div>
+
+    <div class="drop-container">
+        <div class="bucket" id="acidic-zone">
+            <h2>Acidic (酸性)</h2>
+            <div class="drop-area" id="acidic" ondrop="drop(event)" ondragover="allowDrop(event)"></div>
+        </div>
+        <div class="bucket" id="neutral-zone">
+            <h2>Neutral (中性)</h2>
+            <div class="drop-area" id="neutral" ondrop="drop(event)" ondragover="allowDrop(event)"></div>
+        </div>
+        <div class="bucket" id="alkaline-zone">
+            <h2>Alkaline (鹼性)</h2>
+            <div class="drop-area" id="alkaline" ondrop="drop(event)" ondragover="allowDrop(event)"></div>
+        </div>
+    </div>
+
+    <div id="final-msg"></div>
+
+    <div class="controls">
+        <button id="reset-btn" onclick="initGame()">Reset Lab</button>
+        <button id="submit-btn" onclick="checkAnswers()">Submit for Grading</button>
+    </div>
+
+    <script>
+        // Mapping items to your 6 images
+        const items = [
+            // From Image 1
+            { name: "Orange", cn: "橙", type: "acidic", img: "https://tse1.mm.bing.net/th/id/OIP.GHwGiiTxwQm6gF8GaNZeGgHaHa?rs=1&pid=ImgDetMain&o=7&rm=3", note: "Citrus fruit" },
+            { name: "Lemon", cn: "檸檬", type: "acidic", img: "https://tse4.mm.bing.net/th/id/OIP.aMNROa_UxYe7ILdf8Ed1pwHaG0?rs=1&pid=ImgDetMain&o=7&rm=3", note: "Citrus fruit" },
+            { name: "Soft Drinks", cn: "汽水", type: "acidic", img: "https://th.bing.com/th/id/R.5f286e32230de1f99628b012fdc3e291?rik=e0tVud%2bzJX86kg&pid=ImgRaw&r=0", note: "Carbonated beverage" },
+            { name: "Kiwi Fruit", cn: "奇異果", type: "acidic", img: "https://tse4.mm.bing.net/th/id/OIP.x19C9rYn8xDkk9T11eaprAHaFM?rs=1&pid=ImgDetMain&o=7&rm=3", note: "Acidic fruit" },
+            { name: "Yoghurt", cn: "乳酪", type: "acidic", img: "https://tse3.mm.bing.net/th/id/OIP.j0HL1eUCuQ_hPHEjHhuGLgHaKs?rs=1&pid=ImgDetMain&o=7&rm=3", note: "Lactic acid" },
+            { name: "Vinegar", cn: "醋", type: "acidic", img: "https://www.costco.com.tw/medias/sys_master/images/h3c/h63/11170996715550.jpg", note: "Acetic acid" },
+            // From Image 2
+            { name: "Hair Conditioner", cn: "護髮素", type: "acidic", img: "https://tse2.mm.bing.net/th/id/OIP.izO_8-dLulICYGqzLOJBkwHaHa?rs=1&pid=ImgDetMain&o=7&rm=3", note: "Slightly acidic for hair" },
+            { name: "Lotion", cn: "潤膚露", type: "acidic", img: "https://down-tw.img.susercontent.com/file/tw-11134207-7r990-lmqumixglbizb1", note: "Skin care" },
+            { name: "Toilet Cleaner", cn: "潔廁劑", type: "acidic", img: "https://img.rtacdn-os.com/20241203/e006a7b2-e52a-33c0-88ff-27e13acbcf4f", note: "Strong acidic cleaner" },
+            // From Image 3
+            { name: "Lye Rice Dumplings", cn: "鹼水粽", type: "alkaline", img: "https://tse4.mm.bing.net/th/id/OIP.nWySFUz7If_8MojbA7_UfAHaEK?rs=1&pid=ImgDetMain&o=7&rm=3", note: "Traditional food" },
+            { name: "Baking Soda", cn: "梳打粉", type: "alkaline", img: "https://tse1.mm.bing.net/th/id/OIP.8UfAR_zm_1uCO6BMdjArhwHaHa?rs=1&pid=ImgDetMain&o=7&rm=3", note: "Sodium bicarbonate" },
+            { name: "Preserved Duck Eggs", cn: "皮蛋", type: "alkaline", img: "https://cbu01.alicdn.com/img/ibank/O1CN01eZILvg2NhIyJp5qzm_!!937799994-0-cib.310x310.jpg", note: "Century eggs" },
+            { name: "Chinese Noodles", cn: "中式麵條", type: "alkaline", img: "https://tse2.mm.bing.net/th/id/OIP.eDYTnu2wx4uj4AMWNGF1zwHaFS?w=1120&h=800&rs=1&pid=ImgDetMain&o=7&rm=3", note: "Made with lye water" },
+            // From Image 4
+            { name: "Alkaline Batteries", cn: "鹼性電池", type: "alkaline", img: "https://images.pcone.com.tw/uploads/product_image/9634732/a46ebfb8ba97aa8f935729b2610aa402/232dbdec74844c3544983b9935df0bb4.jpg", note: "Potassium hydroxide inside" },
+            { name: "Kitchen Cleaner", cn: "廚房清潔劑", type: "alkaline", img: "https://tse2.mm.bing.net/th/id/OIP.iJGo3-Jpj1s82E6bPkdcrQHaHa?rs=1&pid=ImgDetMain&o=7&rm=3", note: "Cuts through grease" },
+            { name: "Bleach", cn: "漂白水", type: "alkaline", img: "https://ueeshop.ly200-cdn.com/u_file/UPBB/UPBB006/2408/03/products/4475914f55.png", note: "Sodium hypochlorite" },
+            { name: "Toothpaste", cn: "牙膏", type: "alkaline", img: "https://tse4.mm.bing.net/th/id/OIP.oF97WKTSVq31N2V9r9ofnQHaHa?w=1000&h=1000&rs=1&pid=ImgDetMain&o=7&rm=3", note: "Neutralizes mouth acid" },
+            { name: "Soap", cn: "肥皂", type: "alkaline", img: "https://tse1.mm.bing.net/th/id/OIP.vFeXjtDIzOeki9s8nSRB7AHaFx?w=681&h=531&rs=1&pid=ImgDetMain&o=7&rm=3", note: "Basic fatty acid salt" },
+            // From Image 5
+            { name: "Hydrochloric Acid", cn: "氫氯酸", type: "acidic", img: "image5.png", note: "Strong laboratory acid" },
+            { name: "Sulphuric Acid", cn: "硫酸", type: "acidic", img: "image5.png", note: "Strong laboratory acid" },
+            { name: "Nitric Acid", cn: "硝酸", type: "acidic", img: "image5.png", note: "Strong laboratory acid" },
+            // From Image 6
+            { name: "Sodium Hydroxide", cn: "氫氧化鈉", type: "alkaline", img: "image6.png", note: "Strong laboratory base" },
+            { name: "Ammonia Solution", cn: "氨溶液", type: "alkaline", img: "image6.png", note: "Weak laboratory base" },
+            { name: "Lime Water", cn: "石灰水", type: "alkaline", img: "image6.png", note: "Calcium hydroxide" },
+            // Neutral
+            { name: "Distilled Water", cn: "蒸餾水", type: "neutral", img: "placeholder.png", note: "Pure water, pH 7" }
+        ];
+
+        const inspectWin = document.getElementById('inspection-window');
+
+        function showInspect(item) {
+            inspectWin.style.display = 'block';
+            document.getElementById('pop-chinese').innerText = item.cn;
+            document.getElementById('pop-english').innerText = item.name;
+            document.getElementById('pop-desc').innerText = item.note;
+            // Note: If you don't have images yet, this will show a broken icon, 
+            // but the logic is ready for your filenames!
+            document.getElementById('pop-img').src = item.img; 
+        }
+
+        function hideInspect() { inspectWin.style.display = 'none'; }
+
+        function allowDrop(ev) { ev.preventDefault(); }
+        function drag(ev) { ev.dataTransfer.setData("text", ev.target.id); }
+
+        function drop(ev) {
+            ev.preventDefault();
+            var data = ev.dataTransfer.getData("text");
+            var el = document.getElementById(data);
+            let target = ev.target;
+            if (target.classList.contains('draggable')) target = target.parentNode;
+            
+            if (target.id === 'word-bank' || target.classList.contains('drop-area')) {
+                target.appendChild(el);
+                el.classList.remove('correct', 'incorrect');
+            }
+        }
+
+        function initGame() {
+            const bank = document.getElementById('word-bank');
+            const areas = document.querySelectorAll('.drop-area');
+            bank.innerHTML = '';
+            areas.forEach(a => a.innerHTML = '');
+            document.getElementById('final-msg').innerText = '';
+
+            const shuffled = [...items].sort(() => Math.random() - 0.5);
+            shuffled.forEach((item, i) => {
+                const div = document.createElement('div');
+                div.className = 'draggable';
+                div.id = 'item-' + i;
+                div.draggable = true;
+                div.innerText = item.name;
+                div.setAttribute('data-type', item.type);
+                
+                // Hover triggers the preview window
+                div.onmouseover = () => showInspect(item);
+                div.onmouseout = hideInspect;
+                div.ondragstart = drag;
+                
+                bank.appendChild(div);
+            });
+        }
+
+        function checkAnswers() {
+            const draggables = document.querySelectorAll('.draggable');
+            let correct = 0;
+            let placed = 0;
+
+            draggables.forEach(el => {
+                const zone = el.parentNode.id;
+                const actual = el.getAttribute('data-type');
+                if (zone !== 'word-bank') {
+                    placed++;
+                    if (zone === actual) {
+                        el.classList.add('correct');
+                        correct++;
+                    } else {
+                        el.classList.add('incorrect');
+                    }
+                }
+            });
+
+            const msg = document.getElementById('final-msg');
+            if (placed < items.length) {
+                msg.innerText = "Please classify all items!";
+                msg.style.color = "orange";
+            } else if (correct === items.length) {
+                msg.innerText = "Perfect Score! Well done.";
+                msg.style.color = "green";
+            } else {
+                msg.innerText = `You got ${correct} / ${items.length} correct. Try again!`;
+                msg.style.color = "red";
+            }
+        }
+
+        window.onload = initGame;
+    </script>
+</body>
+</html>
