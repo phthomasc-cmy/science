@@ -1,0 +1,291 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>pH Classification Challenge (with Translation)</title>
+    <style>
+        :root {
+            --acid-color: #ffcccc;
+            --neutral-color: #ccffcc;
+            --alkaline-color: #ccccff;
+            --text-color: #333;
+        }
+
+        body {
+            font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif;
+            background-color: #f0f2f5;
+            display: flex;
+            flex-direction: column;
+            align-items: center;
+            padding: 20px;
+            margin: 0;
+            color: var(--text-color);
+        }
+
+        .header-section { text-align: center; margin-bottom: 20px; }
+        
+        /* Translation Display */
+        #translation-display {
+            background: #333;
+            color: #fff;
+            padding: 10px 20px;
+            border-radius: 50px;
+            font-size: 1.2rem;
+            font-weight: bold;
+            margin-bottom: 15px;
+            min-height: 28px;
+            min-width: 300px;
+            text-align: center;
+            transition: all 0.3s ease;
+        }
+
+        /* Word Bank */
+        #word-bank {
+            background: white;
+            border: 2px solid #ddd;
+            border-radius: 10px;
+            padding: 15px;
+            width: 90%;
+            max-width: 900px;
+            display: flex;
+            flex-wrap: wrap;
+            gap: 10px;
+            justify-content: center;
+            margin-bottom: 30px;
+            min-height: 80px;
+        }
+
+        .draggable {
+            background: #fff;
+            border: 2px solid #999;
+            padding: 8px 14px;
+            border-radius: 8px;
+            cursor: grab;
+            user-select: none;
+            font-size: 14px;
+            font-weight: 600;
+            transition: transform 0.1s, box-shadow 0.2s;
+        }
+
+        .draggable:hover {
+            box-shadow: 0 4px 8px rgba(0,0,0,0.2);
+            border-color: #000;
+        }
+
+        /* Drop Zones */
+        .drop-container {
+            display: flex;
+            gap: 20px;
+            width: 95%;
+            max-width: 1100px;
+            justify-content: center;
+            flex-wrap: wrap;
+        }
+
+        .bucket {
+            flex: 1;
+            min-width: 300px;
+            min-height: 350px;
+            border-radius: 15px;
+            padding: 15px;
+            display: flex;
+            flex-direction: column;
+            box-shadow: 0 4px 6px rgba(0,0,0,0.05);
+        }
+
+        .bucket h2 { text-align: center; margin-top: 0; pointer-events: none; border-bottom: 2px solid rgba(0,0,0,0.1); padding-bottom: 10px; }
+
+        #acidic-zone { background-color: var(--acid-color); border: 3px solid #ff4d4d; }
+        #neutral-zone { background-color: var(--neutral-color); border: 3px solid #4CAF50; }
+        #alkaline-zone { background-color: var(--alkaline-color); border: 3px solid #4d79ff; }
+
+        .drop-area {
+            width: 100%;
+            flex-grow: 1;
+            display: flex;
+            flex-wrap: wrap;
+            gap: 8px;
+            align-content: flex-start;
+            padding: 10px;
+        }
+
+        /* Result Classes */
+        .correct { background-color: #4CAF50 !important; color: white !important; border-color: #2e7d32; }
+        .incorrect { background-color: #f44336 !important; color: white !important; border-color: #c62828; }
+
+        /* Controls */
+        .controls { margin-top: 30px; display: flex; gap: 20px; }
+        button { padding: 12px 40px; font-size: 18px; font-weight: bold; cursor: pointer; border: none; border-radius: 8px; transition: 0.2s; }
+        #submit-btn { background-color: #007bff; color: white; }
+        #reset-btn { background-color: #6c757d; color: white; }
+        #result-msg { margin-top: 20px; font-size: 22px; font-weight: bold; }
+
+    </style>
+</head>
+<body>
+
+    <div class="header-section">
+        <h1>pH Classification Lab</h1>
+        <p>Drag items to categorize them. <b>Hover over a word to see its Chinese translation.</b></p>
+    </div>
+
+    <!-- The Translation Function Target -->
+    <div id="translation-display">Hover for translation / 移至此顯示翻譯</div>
+
+    <div id="word-bank" ondrop="drop(event)" ondragover="allowDrop(event)"></div>
+
+    <div class="drop-container">
+        <div class="bucket" id="acidic-zone">
+            <h2>Acidic (酸性)</h2>
+            <div class="drop-area" id="acidic" ondrop="drop(event)" ondragover="allowDrop(event)"></div>
+        </div>
+        <div class="bucket" id="neutral-zone">
+            <h2>Neutral (中性)</h2>
+            <div class="drop-area" id="neutral" ondrop="drop(event)" ondragover="allowDrop(event)"></div>
+        </div>
+        <div class="bucket" id="alkaline-zone">
+            <h2>Alkaline (鹼性)</h2>
+            <div class="drop-area" id="alkaline" ondrop="drop(event)" ondragover="allowDrop(event)"></div>
+        </div>
+    </div>
+
+    <div id="result-msg"></div>
+
+    <div class="controls">
+        <button id="reset-btn" onclick="initGame()">Restart Game</button>
+        <button id="submit-btn" onclick="checkAnswers()">Submit Answers</button>
+    </div>
+
+    <script>
+        const items = [
+            // Acidic
+            { e: "Orange", c: "橙", type: "acidic" },
+            { e: "Lemon", c: "檸檬", type: "acidic" },
+            { e: "Soft Drinks", c: "汽水", type: "acidic" },
+            { e: "Kiwi Fruit", c: "奇異果", type: "acidic" },
+            { e: "Yoghurt", c: "乳酪", type: "acidic" },
+            { e: "Vinegar", c: "醋", type: "acidic" },
+            { e: "Hair Conditioner", c: "護髮素", type: "acidic" },
+            { e: "Lotion", c: "潤膚露", type: "acidic" },
+            { e: "Toilet Cleaner", c: "潔廁劑", type: "acidic" },
+            { e: "Dilute Hydrochloric Acid", c: "稀氫氯酸", type: "acidic" },
+            { e: "Dilute Sulphuric Acid", c: "稀硫酸", type: "acidic" },
+            { e: "Dilute Nitric Acid", c: "稀硝酸", type: "acidic" },
+            // Alkaline
+            { e: "Lye Water Rice Dumplings", c: "鹼水粽", type: "alkaline" },
+            { e: "Baking Soda", c: "梳打粉", type: "alkaline" },
+            { e: "Preserved Duck Eggs", c: "皮蛋", type: "alkaline" },
+            { e: "Chinese Noodles", c: "中式麵條", type: "alkaline" },
+            { e: "Alkaline Batteries", c: "鹼性電池", type: "alkaline" },
+            { e: "Kitchen Cleaner", c: "廚房清潔劑", type: "alkaline" },
+            { e: "Bleach", c: "漂白水", type: "alkaline" },
+            { e: "Toothpaste", c: "牙膏", type: "alkaline" },
+            { e: "Soap", c: "肥皂", type: "alkaline" },
+            { e: "Dilute Sodium Hydroxide", c: "稀氫氧化鈉", type: "alkaline" },
+            { e: "Dilute Ammonia Solution", c: "稀氨溶液", type: "alkaline" },
+            { e: "Lime Water", c: "石灰水", type: "alkaline" },
+            // Neutral
+            { e: "Distilled Water", c: "蒸餾水", type: "neutral" }
+        ];
+
+        const translationDisplay = document.getElementById('translation-display');
+
+        function allowDrop(ev) { ev.preventDefault(); }
+
+        function drag(ev) {
+            ev.dataTransfer.setData("text", ev.target.id);
+        }
+
+        function drop(ev) {
+            ev.preventDefault();
+            var data = ev.dataTransfer.getData("text");
+            var draggedElement = document.getElementById(data);
+            let target = ev.target;
+            
+            // If dropping on another item, get the parent bucket instead
+            if (target.classList.contains('draggable')) { target = target.parentNode; }
+            
+            if (target.id === 'word-bank' || target.classList.contains('drop-area')) {
+                target.appendChild(draggedElement);
+                draggedElement.classList.remove('correct', 'incorrect');
+                document.getElementById('result-msg').innerText = "";
+            }
+        }
+
+        // The Translation Function
+        function showTranslation(chinese) {
+            translationDisplay.innerText = chinese;
+            translationDisplay.style.backgroundColor = "#007bff";
+        }
+
+        function clearTranslation() {
+            translationDisplay.innerText = "Hover for translation / 移至此顯示翻譯";
+            translationDisplay.style.backgroundColor = "#333";
+        }
+
+        function initGame() {
+            const bank = document.getElementById('word-bank');
+            const areas = document.querySelectorAll('.drop-area');
+            const msg = document.getElementById('result-msg');
+            bank.innerHTML = '';
+            msg.innerText = '';
+            areas.forEach(a => a.innerHTML = '');
+
+            const shuffled = [...items].sort(() => Math.random() - 0.5);
+            
+            shuffled.forEach((item, index) => {
+                const el = document.createElement('div');
+                el.className = 'draggable';
+                el.id = 'item-' + index;
+                el.draggable = true;
+                el.innerText = item.e;
+                el.title = item.c; // Tooltip translation
+                el.setAttribute('data-type', item.type);
+                
+                // Mouse Events for Translation Function
+                el.onmouseover = () => showTranslation(item.c);
+                el.onmouseout = clearTranslation;
+                
+                el.ondragstart = drag;
+                bank.appendChild(el);
+            });
+        }
+
+        function checkAnswers() {
+            const draggables = document.querySelectorAll('.draggable');
+            let correctCount = 0;
+            let placedCount = 0;
+
+            draggables.forEach(el => {
+                const parentId = el.parentNode.id;
+                const correctType = el.getAttribute('data-type');
+
+                if (parentId !== 'word-bank') {
+                    placedCount++;
+                    if (parentId === correctType) {
+                        el.classList.add('correct');
+                        correctCount++;
+                    } else {
+                        el.classList.add('incorrect');
+                    }
+                }
+            });
+
+            const msg = document.getElementById('result-msg');
+            if (placedCount < items.length) {
+                msg.style.color = "#856404";
+                msg.innerText = `Keep going! Place all ${items.length} items.`;
+            } else if (correctCount === items.length) {
+                msg.style.color = "#155724";
+                msg.innerText = "Excellent! All substances categorized correctly!";
+            } else {
+                msg.style.color = "#721c24";
+                msg.innerText = `Score: ${correctCount} / ${items.length}. Check the red boxes!`;
+            }
+        }
+
+        window.onload = initGame;
+    </script>
+</body>
+</html>
