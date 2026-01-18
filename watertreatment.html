@@ -1,0 +1,203 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <title>HK Water Treatment Simulation - V2</title>
+    <style>
+        body { font-family: 'Segoe UI', Arial, sans-serif; background: #1a1a1a; color: white; text-align: center; margin: 0; padding: 20px; }
+        canvas { background: #fdfdfd; border: 5px solid #2c3e50; border-radius: 12px; box-shadow: 0 10px 40px rgba(0,0,0,0.6); }
+        .controls { margin-bottom: 20px; background: #333; padding: 20px; border-radius: 10px; display: inline-block; }
+        button { padding: 15px 30px; font-size: 18px; font-weight: bold; cursor: pointer; background: #3498db; color: white; border: none; border-radius: 6px; transition: 0.3s; }
+        button:hover { background: #2980b9; transform: translateY(-2px); }
+        .info { font-size: 14px; margin-top: 10px; color: #aaa; }
+    </style>
+</head>
+<body>
+
+    <div class="controls">
+        <h1>Water Treatment Simulation</h1>
+        <button onclick="addWater()">Release Water Flow</button>
+        <div class="info">Watch the center of the Clarifier and the Pump Station for specific flow changes.</div>
+    </div>
+
+    <br>
+    <canvas id="simCanvas" width="1000" height="600"></canvas>
+
+<script>
+const canvas = document.getElementById('simCanvas');
+const ctx = canvas.getContext('2d');
+let particles = [];
+
+class WaterParticle {
+    constructor() {
+        this.x = 0;
+        this.y = 100;
+        this.stage = "screening";
+        this.color = "#8b4513"; // Raw water color
+        this.size = 5;
+        this.speed = 1.8;
+        this.isSludge = (Math.random() < 0.2); // 20% of particles will become sludge
+    }
+
+    update() {
+        // 1. SCREENING -> RAPID MIX
+        if (this.stage === "screening") {
+            this.x += this.speed;
+            if (this.x > 250) this.stage = "mixing";
+        }
+        // 2. RAPID MIX (Mixing motion)
+        else if (this.stage === "mixing") {
+            this.x += this.speed;
+            this.y += Math.sin(this.x * 0.2) * 3; 
+            if (this.x > 400) this.stage = "clarifier";
+        }
+        // 3. CLARIFIER (Sludge removal in middle)
+        else if (this.stage === "clarifier") {
+            this.x += this.speed;
+            if (this.y > 100) this.y -= 0.5; // Return to pipe level from mixing turbulence
+
+            // LOGIC: At the center (approx 630), sludge sinks
+            if (this.isSludge && this.x >= 630 && this.x <= 635) {
+                this.stage = "sludge_sinking";
+            }
+            if (this.x > 710) this.stage = "to_filter";
+        }
+        else if (this.stage === "sludge_sinking") {
+            this.x = 630; // Lock to middle x
+            this.y += this.speed; // Move downward
+            if (this.y > 220) this.x = -100; // Removed from simulation
+        }
+        // 4. FILTRATION (Downward flow)
+        else if (this.stage === "to_filter") {
+            this.x += this.speed;
+            if (this.x > 880) this.stage = "filtering";
+        }
+        else if (this.stage === "filtering") {
+            this.x = 880;
+            this.y += this.speed;
+            if (this.y > 200) this.color = "#00d4ff"; // Purified water
+            if (this.y > 450) this.stage = "disinfection";
+        }
+        // 5. DISINFECTION (Back to Pump Station)
+        else if (this.stage === "disinfection") {
+            this.x -= this.speed * 1.5;
+            this.y = 450;
+            if (this.x < 150) this.stage = "pump_drop";
+        }
+        // 6. PUMP STATION (Downward flow at center)
+        else if (this.stage === "pump_drop") {
+            // LOGIC: At center of pump (150), go downward
+            this.x = 150;
+            this.y += this.speed;
+            if (this.y > 580) this.x = -100;
+        }
+    }
+
+    draw() {
+        ctx.fillStyle = this.color;
+        ctx.beginPath();
+        ctx.arc(this.x, this.y, this.size, 0, Math.PI * 2);
+        ctx.fill();
+    }
+}
+
+function drawEnvironment() {
+    ctx.clearRect(0, 0, canvas.width, canvas.height);
+    
+    // DRAW PIPES
+    ctx.lineWidth = 20;
+    ctx.strokeStyle = "#cfe2f3"; 
+    ctx.lineCap = "round";
+    ctx.lineJoin = "round";
+
+    ctx.beginPath();
+    // Top Horizontal Chain
+    ctx.moveTo(0, 100);    ctx.lineTo(550, 100); 
+    ctx.moveTo(710, 100);  ctx.lineTo(880, 100);
+    // Vertical Filter
+    ctx.moveTo(880, 100);  ctx.lineTo(880, 450);
+    // Bottom Horizontal Chain
+    ctx.lineTo(150, 450);  
+    // Pump Drop-off
+    ctx.lineTo(150, 600);
+    ctx.stroke();
+
+    // TANKS
+    ctx.lineWidth = 2;
+    ctx.strokeStyle = "#333";
+
+    // Rapid Mix
+    ctx.fillStyle = "#ecf0f1";
+    ctx.fillRect(250, 60, 150, 80);
+    ctx.strokeRect(250, 60, 150, 80);
+    
+    // Clarifier (Funnel Shape)
+    ctx.beginPath();
+    ctx.moveTo(550, 50); ctx.lineTo(710, 50);
+    ctx.lineTo(660, 180); 
+    ctx.lineTo(660, 220); // Stem
+    ctx.lineTo(600, 220); // Stem
+    ctx.lineTo(600, 180);
+    ctx.closePath();
+    ctx.fillStyle = "#ecf0f1"; ctx.fill(); ctx.stroke();
+
+    // Filtration Tank
+    ctx.fillStyle = "#4b3621"; ctx.fillRect(830, 100, 100, 50); // Carbon
+    ctx.fillStyle = "#d2b48c"; ctx.fillRect(830, 150, 100, 50); // Sand
+    ctx.fillStyle = "#7f8c8d"; ctx.fillRect(830, 200, 100, 50); // Gravel
+    ctx.strokeRect(830, 100, 100, 150);
+
+    // Clear Water Tank
+    ctx.fillStyle = "#e3f2fd";
+    ctx.fillRect(250, 400, 120, 100);
+    ctx.strokeRect(250, 400, 120, 100);
+
+    // Pump Station (The Building)
+    ctx.fillStyle = "#95a5a6";
+    ctx.fillRect(100, 410, 100, 80); // Centered at x=150
+    ctx.strokeRect(100, 410, 100, 80);
+    ctx.fillStyle = "#2c3e50"; // Windows
+    ctx.fillRect(120, 430, 20, 15); ctx.fillRect(160, 430, 20, 15);
+
+    // CHEMICALS
+    function drawChem(x, y, color, label) {
+        ctx.fillStyle = color;
+        ctx.beginPath(); ctx.arc(x, y-10, 8, 0, Math.PI*2); ctx.fill();
+        ctx.fillStyle = "#000"; ctx.font = "bold 11px Arial"; ctx.fillText(label, x-20, y-25);
+    }
+    drawChem(325, 60, "orange", "ALUM");
+    drawChem(750, 440, "green", "CHLORINE");
+    drawChem(600, 440, "red", "FLUORIDE");
+
+    // LABELS
+    ctx.fillStyle = "#2c3e50"; ctx.font = "bold 13px Arial";
+    ctx.fillText("Raw Water", 10, 80);
+    ctx.fillText("Rapid Mix", 295, 155);
+    ctx.fillText("CLARIFIER", 605, 40);
+    ctx.fillText("SLUDGE REMOVAL (MID)", 560, 240);
+    ctx.fillText("Filtration", 845, 90);
+    ctx.fillText("Clear Water Tank", 258, 520);
+    ctx.fillText("PUMP STATION", 100, 400);
+    ctx.fillText("DISTRIBUTION", 170, 580);
+}
+
+function addWater() {
+    for(let i=0; i<20; i++) {
+        setTimeout(() => particles.push(new WaterParticle()), i * 200);
+    }
+}
+
+function animate() {
+    drawEnvironment();
+    particles.forEach((p, index) => {
+        p.update();
+        p.draw();
+        if (p.x < -50) particles.splice(index, 1);
+    });
+    requestAnimationFrame(animate);
+}
+
+animate();
+</script>
+</body>
+</html>
