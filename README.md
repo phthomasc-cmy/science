@@ -38,7 +38,10 @@
     <div class="link-box">
                 <a href="watertreatment.html">➜ S1 Water treatment</a>
                 <a href="acidalkalimatch.html">➜ S2 Match the acid and alkali</a>
+                <a href="acidalkalimatch_v2.html">➜ S2 Match the acid and alkali (ver.2)</a>
+                <a href="acidalkalimatch_v3.html">➜ S2 Match the acid and alkali (ver.2)</a>
                 <a href="visual_ph_lab.html">➜ S2 pH paper testing game</a>
+                <a href="litmus_paper_test.html">➜ S2 litmus paper test</a>
                 
     </div>
 
