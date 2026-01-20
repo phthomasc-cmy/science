@@ -1,0 +1,390 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Unit 9: Comparing Acidity and Alkalinity</title>
+    <style>
+        :root {
+            --acid-red: #e74c3c;
+            --neutral-green: #2ecc71;
+            --alkali-purple: #8e44ad;
+            --bg-color: #f4f7f6;
+        }
+
+        body {
+            font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif;
+            background-color: var(--bg-color);
+            margin: 0;
+            padding: 20px;
+            color: #333;
+        }
+
+        .container {
+            max-width: 900px;
+            margin: 0 auto;
+            background: white;
+            padding: 30px;
+            border-radius: 15px;
+            box-shadow: 0 4px 15px rgba(0,0,0,0.1);
+        }
+
+        header {
+            text-align: center;
+            border-bottom: 2px solid #eee;
+            margin-bottom: 20px;
+        }
+
+        .section {
+            display: none;
+            animation: fadeIn 0.5s;
+        }
+
+        .section.active {
+            display: block;
+        }
+
+        @keyframes fadeIn {
+            from { opacity: 0; }
+            to { opacity: 1; }
+        }
+
+        /* pH Scale Visual */
+        .ph-scale-container {
+            display: flex;
+            margin: 20px 0;
+            height: 60px;
+            border-radius: 8px;
+            overflow: hidden;
+            border: 1px solid #ccc;
+        }
+
+        .ph-box {
+            flex: 1;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            color: white;
+            font-weight: bold;
+            cursor: pointer;
+            transition: transform 0.2s;
+        }
+
+        .ph-box:hover {
+            transform: scale(1.1);
+            z-index: 10;
+        }
+
+        /* Interactive Styles */
+        .style-grid {
+            display: grid;
+            grid-template-columns: 1fr 1fr;
+            gap: 15px;
+            margin-bottom: 20px;
+        }
+
+        .style-card {
+            background: #fdfefe;
+            padding: 15px;
+            border-radius: 8px;
+            border-left: 5px solid #3498db;
+            box-shadow: 0 2px 5px rgba(0,0,0,0.05);
+        }
+
+        .style-card.acid-theme { border-left-color: var(--acid-red); background: #fdf2f2; }
+        .style-card.alkali-theme { border-left-color: var(--alkali-purple); background: #f5f3f7; }
+
+        .btn-group {
+            display: flex;
+            justify-content: space-between;
+            margin-top: 20px;
+            gap: 10px;
+        }
+
+        button {
+            padding: 10px 20px;
+            background-color: #3498db;
+            color: white;
+            border: none;
+            border-radius: 5px;
+            cursor: pointer;
+            font-size: 16px;
+        }
+
+        button:hover { background-color: #2980b9; }
+        button.secondary { background-color: #95a5a6; }
+
+        .task-container {
+            background: #f9f9f9;
+            padding: 20px;
+            border-radius: 10px;
+            margin: 20px 0;
+        }
+
+        .task-input {
+            width: 100%;
+            padding: 12px;
+            margin: 8px 0;
+            border: 2px solid #ddd;
+            border-radius: 5px;
+            font-size: 16px;
+            box-sizing: border-box;
+        }
+
+        .feedback {
+            font-weight: bold;
+            margin-bottom: 15px;
+            padding: 10px;
+            border-radius: 5px;
+            display: none;
+        }
+
+        .success { display: block; background: #d4edda; color: #155724; border: 1px solid #c3e6cb; }
+        .error { display: block; background: #f8d7da; color: #721c24; border: 1px solid #f5c6cb; }
+
+        /* Card Game Styling */
+        .card-zone {
+            display: flex;
+            gap: 20px;
+            justify-content: center;
+            margin-top: 20px;
+        }
+
+        .chem-card {
+            width: 180px;
+            height: 240px;
+            background: #fff;
+            border: 2px dashed #3498db;
+            border-radius: 10px;
+            display: flex;
+            flex-direction: column;
+            align-items: center;
+            justify-content: center;
+            text-align: center;
+            padding: 15px;
+        }
+
+        .chem-card.flipped {
+            border-style: solid;
+            background: #fdfefe;
+            box-shadow: 0 4px 8px rgba(0,0,0,0.1);
+        }
+
+        .ph-badge {
+            font-size: 32px;
+            font-weight: bold;
+            margin-top: 15px;
+        }
+        
+        .type-indicator {
+            font-size: 0.8em;
+            text-transform: uppercase;
+            font-weight: bold;
+            margin-bottom: 10px;
+        }
+    </style>
+</head>
+<body>
+
+<div class="container">
+    <header>
+        <h1>Unit 9: Acidity and Alkalinity</h1>
+    </header>
+
+    <!-- Slide 1: pH Scale -->
+    <div id="slide1" class="section active">
+        <h2>1. pH Scale Explorer</h2>
+        <div class="ph-scale-container" id="scale"></div>
+        <div id="ph-info" style="text-align: center; height: 50px; font-weight: bold; font-size: 1.2em; margin-top: 10px;">
+            Select a pH value...
+        </div>
+        <div class="style-grid">
+            <div class="style-card acid-theme">
+                <strong>Acids (pH 0-6):</strong><br>
+                The smaller the pH value, the <u>more acidic</u> the substance is.
+            </div>
+            <div class="style-card alkali-theme">
+                <strong>Alkalis (pH 8-14):</strong><br>
+                The larger the pH value, the <u>more alkaline</u> the substance is.
+            </div>
+        </div>
+        <div class="btn-group">
+            <span></span>
+            <button onclick="showSlide(2)">Next: Sentence Patterns &rarr;</button>
+        </div>
+    </div>
+
+    <!-- Slide 2: Sentence Styles -->
+    <div id="slide2" class="section">
+        <h2>2. Comparison Sentence Patterns</h2>
+        
+        <div class="style-grid">
+            <!-- ACIDS -->
+            <div class="style-card acid-theme">
+                <h4 style="margin-top:0; color:var(--acid-red)">Comparing Acids</h4>
+                <p><small>A (pH 1) vs B (pH 3)</small></p>
+                <strong>Style 1:</strong> A is <u>more acidic</u> than B.<br>
+                <strong>Style 2:</strong> B is <u>less acidic</u> than A.<br>
+                <strong>Style 3:</strong> A has a <u>higher acidity</u> than B.<br>
+                <strong>Style 4:</strong> B has a <u>lower acidity</u> than A.
+            </div>
+
+            <!-- ALKALIS -->
+            <div class="style-card alkali-theme">
+                <h4 style="margin-top:0; color:var(--alkali-purple)">Comparing Alkalis</h4>
+                <p><small>D (pH 13) vs C (pH 9)</small></p>
+                <strong>Style 1:</strong> D is <u>more alkaline</u> than C.<br>
+                <strong>Style 2:</strong> C is <u>less alkaline</u> than D.<br>
+                <strong>Style 3:</strong> D has a <u>higher alkalinity</u> than C.<br>
+                <strong>Style 4:</strong> C has a <u>lower alkalinity</u> than D.
+            </div>
+        </div>
+        
+        <div class="btn-group">
+            <button class="secondary" onclick="showSlide(1)">&larr; Back</button>
+            <button onclick="showSlide(3)">Next: Writing Tasks &rarr;</button>
+        </div>
+    </div>
+
+    <!-- Slide 3: Writing Task -->
+    <div id="slide3" class="section">
+        <h2>3. Writing Practice</h2>
+        
+        <div class="task-container">
+            <p><strong>Part A: Acids</strong><br>🍋 Lemon Juice (pH 3) vs 🥛 Milk (pH 5)</p>
+            <label>Style 1 (is more acidic):</label>
+            <input type="text" class="task-input" id="acidIn" placeholder="... is more acidic than ...">
+            <div id="acidFeedback" class="feedback"></div>
+
+            <hr style="margin:20px 0; border:0; border-top:1px solid #ddd">
+
+            <p><strong>Part B: Alkalis</strong><br>🧼 Oven Cleaner (pH 13) vs 🦷 Toothpaste (pH 10)</p>
+            <label>Style 3 (has a higher alkalinity):</label>
+            <input type="text" class="task-input" id="alkaliIn" placeholder="... has a higher alkalinity than ...">
+            <div id="alkaliFeedback" class="feedback"></div>
+            
+            <div class="btn-group">
+                <button onclick="checkTasks()" style="background-color: #27ae60;">Check Logic</button>
+                <button class="secondary" onclick="showAnswers()">Show Answers</button>
+            </div>
+        </div>
+
+        <div class="btn-group">
+            <button class="secondary" onclick="showSlide(2)">&larr; Back</button>
+            <button onclick="showSlide(4)">Next: Oral Card Game &rarr;</button>
+        </div>
+    </div>
+
+    <!-- Slide 4: Oral Task Game -->
+    <div id="slide4" class="section">
+        <h2>4. Oral Task: Card Challenge</h2>
+        <p>Compare these two substances of the same type!</p>
+        
+        <div id="draw-type-text" style="text-align: center; font-weight: bold; height: 24px;"></div>
+
+        <div class="card-zone">
+            <div id="card1" class="chem-card">?</div>
+            <div id="card2" class="chem-card">?</div>
+        </div>
+
+        <div style="text-align: center; margin-top: 30px;">
+            <button onclick="drawCards()" style="background-color: var(--alkali-purple); padding: 15px 30px; font-size: 1.2em;">Draw New Pair</button>
+        </div>
+
+        <div class="btn-group">
+            <button class="secondary" onclick="showSlide(3)">&larr; Back</button>
+            <button onclick="location.reload()">Reset Lesson</button>
+        </div>
+    </div>
+</div>
+
+<script>
+    // 1. pH Scale Setup
+    const colors = ['#e74c3c', '#e67e22', '#f39c12', '#f1c40f', '#f7dc6f', '#d4e157', '#aed581', '#2ecc71', '#4db6ac', '#4fc3f7', '#3498db', '#5c6bc0', '#7986cb', '#8e44ad', '#4a235a'];
+    const scale = document.getElementById('scale');
+    for (let i = 0; i <= 14; i++) {
+        let box = document.createElement('div');
+        box.className = 'ph-box';
+        box.style.backgroundColor = colors[i];
+        box.innerText = i;
+        box.onclick = () => {
+            const info = document.getElementById('ph-info');
+            if (i < 7) info.innerHTML = `pH ${i}: <span style="color:var(--acid-red)">ACIDIC</span>`;
+            else if (i == 7) info.innerHTML = `pH ${i}: <span style="color:var(--neutral-green)">NEUTRAL</span>`;
+            else info.innerHTML = `pH ${i}: <span style="color:var(--alkali-purple)">ALKALINE</span>`;
+        };
+        scale.appendChild(box);
+    }
+
+    // 2. Navigation
+    function showSlide(n) {
+        document.querySelectorAll('.section').forEach(s => s.classList.remove('active'));
+        document.getElementById('slide' + n).classList.add('active');
+    }
+
+    // 3. Logic Check
+    function checkTasks() {
+        const a = document.getElementById('acidIn').value.toLowerCase();
+        const b = document.getElementById('alkaliIn').value.toLowerCase();
+        const af = document.getElementById('acidFeedback');
+        const bf = document.getElementById('alkaliFeedback');
+
+        // Acid Logic: Lemon (3) vs Milk (5). Lemon is more acidic.
+        if (a.includes("lemon") && a.includes("milk") && a.includes("more acidic")) {
+            if (a.indexOf("lemon") < a.indexOf("more acidic") && a.indexOf("more acidic") < a.indexOf("milk")) {
+                af.innerHTML = "✅ Correct!"; af.className = "feedback success";
+            } else { af.innerHTML = "❌ Order error: Lemon is more acidic."; af.className = "feedback error"; }
+        } else { af.innerHTML = "❌ Incomplete."; af.className = "feedback error"; }
+
+        // Alkali Logic: Oven Cleaner (13) vs Toothpaste (10). Oven Cleaner has higher alkalinity.
+        if (b.includes("oven cleaner") && b.includes("toothpaste") && b.includes("higher alkalinity")) {
+            if (b.indexOf("oven cleaner") < b.indexOf("higher alkalinity") && b.indexOf("higher alkalinity") < b.indexOf("toothpaste")) {
+                bf.innerHTML = "✅ Correct!"; bf.className = "feedback success";
+            } else { bf.innerHTML = "❌ Order error: Oven cleaner has higher alkalinity."; bf.className = "feedback error"; }
+        } else { bf.innerHTML = "❌ Incomplete."; bf.className = "feedback error"; }
+    }
+
+    function showAnswers() {
+        document.getElementById('acidIn').value = "Lemon juice is more acidic than milk.";
+        document.getElementById('alkaliIn').value = "Oven cleaner has a higher alkalinity than toothpaste.";
+        checkTasks();
+    }
+
+    // 4. Game Data
+    const acids = [
+        {name: "Battery Acid", ph: 0}, {name: "Stomach Acid", ph: 1}, {name: "Lemon Juice", ph: 2}, 
+        {name: "Vinegar", ph: 3}, {name: "Apple Juice", ph: 4}, {name: "Coffee", ph: 5}, {name: "Milk", ph: 6}
+    ];
+    const alkalis = [
+        {name: "Baking Soda", ph: 9}, {name: "Toothpaste", ph: 10}, {name: "Antacid", ph: 11}, 
+        {name: "Lime Water", ph: 12}, {name: "Oven Cleaner", ph: 13}, {name: "Drain Cleaner", ph: 14}
+    ];
+
+    function drawCards() {
+        const isAcid = Math.random() > 0.5;
+        const pool = isAcid ? acids : alkalis;
+        const typeText = isAcid ? "COMPARING ACIDS" : "COMPARING ALKALIS";
+        const typeColor = isAcid ? "var(--acid-red)" : "var(--alkali-purple)";
+        
+        document.getElementById('draw-type-text').innerText = typeText;
+        document.getElementById('draw-type-text').style.color = typeColor;
+
+        let i1 = Math.floor(Math.random() * pool.length);
+        let i2 = Math.floor(Math.random() * pool.length);
+        while(i1 === i2 || pool[i1].ph === pool[i2].ph) i2 = Math.floor(Math.random() * pool.length);
+
+        const c1 = pool[i1], c2 = pool[i2];
+        const card1 = document.getElementById('card1'), card2 = document.getElementById('card2');
+
+        card1.className = "chem-card flipped";
+        card1.style.borderColor = colors[c1.ph];
+        card1.innerHTML = `<span class="type-indicator" style="color:${typeColor}">${isAcid?'Acid':'Alkali'}</span><strong>${c1.name}</strong><div class="ph-badge" style="color:${colors[c1.ph]}">pH ${c1.ph}</div>`;
+        
+        card2.className = "chem-card flipped";
+        card2.style.borderColor = colors[c2.ph];
+        card2.innerHTML = `<span class="type-indicator" style="color:${typeColor}">${isAcid?'Acid':'Alkali'}</span><strong>${c2.name}</strong><div class="ph-badge" style="color:${colors[c2.ph]}">pH ${c2.ph}</div>`;
+    }
+</script>
+
+</body>
+</html>

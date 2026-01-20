@@ -1,0 +1,272 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>pH Titration Simulation V3</title>
+    <script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
+    <style>
+        :root {
+            --primary-red: #d32f2f;
+            --chart-pink: #d81b60;
+            --chart-blue: #81d4fa;
+        }
+        body { font-family: 'Segoe UI', Arial, sans-serif; background-color: #f0f2f5; padding: 20px; display: flex; flex-direction: column; align-items: center; }
+        .setup-panel, .quiz-panel { background: white; padding: 25px; border-radius: 12px; box-shadow: 0 4px 15px rgba(0,0,0,0.1); width: 100%; max-width: 900px; margin-bottom: 20px; }
+        .grid-container { display: grid; grid-template-columns: 1fr 1fr; gap: 30px; }
+        .input-group { margin-bottom: 15px; }
+        label { display: block; font-weight: bold; margin-bottom: 5px; font-size: 0.9em; color: #444; }
+        input, select { width: 100%; padding: 10px; border: 2px solid #ddd; border-radius: 6px; box-sizing: border-box; transition: border-color 0.3s; }
+        input:focus { border-color: var(--chart-pink); outline: none; }
+        
+        .procedure-box { background: #fffde7; padding: 15px; border-radius: 8px; border-left: 5px solid #fbc02d; font-size: 0.85em; }
+        .lang-toggle { font-weight: bold; color: #f57f17; margin-bottom: 5px; margin-top: 10px; }
+
+        .main-container { display: flex; flex-wrap: wrap; justify-content: center; gap: 20px; background: white; padding: 20px; border-radius: 12px; box-shadow: 0 4px 15px rgba(0,0,0,0.1); width: 100%; max-width: 1000px; }
+        
+        #sim-area { width: 320px; display: flex; flex-direction: column; align-items: center; border-right: 1px solid #eee; padding-right: 20px; }
+        .apparatus { position: relative; height: 320px; width: 200px; margin-top: 10px; }
+        .burette { position: absolute; top: 0; left: 85px; width: 30px; height: 160px; border: 2px solid #555; background: #e0f7fa; border-radius: 4px; }
+        .beaker { position: absolute; bottom: 0; left: 50px; width: 100px; height: 90px; border: 3px solid #555; border-top: none; border-radius: 0 0 12px 12px; overflow: hidden; background: white; }
+        .liquid { position: absolute; bottom: 0; width: 100%; height: 40%; transition: background-color 0.5s, height 0.5s; }
+        
+        .controls { margin-top: 20px; text-align: center; width: 100%; }
+        button { padding: 12px 20px; cursor: pointer; background: #1976d2; color: white; border: none; border-radius: 6px; font-weight: bold; transition: 0.2s; }
+        button:hover { background: #115293; }
+        button:disabled { background: #ccc; cursor: not-allowed; }
+        .start-btn { background: #2e7d32; width: 100%; margin-top: 10px; padding: 15px; font-size: 1.1em; }
+
+        #chart-area { flex: 1; min-width: 450px; height: 450px; }
+        .hidden { display: none; }
+
+        /* Quiz Styles */
+        .quiz-q { margin-bottom: 15px; padding: 10px; border-radius: 6px; }
+        .feedback { font-weight: bold; margin-left: 10px; }
+        .correct { color: green; }
+        .wrong { color: red; }
+    </style>
+</head>
+<body>
+
+    <!-- SETUP PHASE -->
+    <div class="setup-panel" id="setupPanel">
+        <h2 style="margin-top:0; color: var(--primary-red); text-align: center;">Lab Setup / 實驗設置</h2>
+        <div class="grid-container">
+            <div>
+                <div class="input-group">
+                    <label>Titration Direction / 滴定方向:</label>
+                    <select id="expType">
+                        <option value="alkaliToAcid">Dilute sodium hydroxide into dilute hydrochloric acid</option>
+                        <option value="acidToAlkali">Dilute hydrochloric acid into dilute sodium hydroxide</option>
+                    </select>
+                </div>
+                <div class="input-group">
+                    <label>Graph Title / 圖表標題:</label>
+                    <input type="text" id="graphTitle" placeholder="Hint: Change in pH when adding [substance]...">
+                </div>
+                <div class="input-group">
+                    <label>X-axis Label (Volume) / X軸標籤:</label>
+                    <input type="text" id="xAxisLabel" placeholder="Hint: Volume of [substance] added (cm³)">
+                </div>
+                <div class="input-group">
+                    <label>Y-axis Label (pH) / Y軸標籤:</label>
+                    <input type="text" id="yAxisLabel" placeholder="Hint: pH value of the resulting solution">
+                </div>
+                <button class="start-btn" onclick="startExperiment()">START EXPERIMENT / 開始實驗</button>
+            </div>
+            
+            <div class="procedure-box">
+                <div class="lang-toggle">English Procedure:</div>
+                <ol>
+                    <li>Choose the titration direction (Acid to Alkali or Alkali to Acid).</li>
+                    <li>Enter a suitable title and axis labels for your graph.</li>
+                    <li>Click 'Start' and add 1 cm³ increments of the reagent.</li>
+                    <li>Observe color changes and the curve plotting.</li>
+                </ol>
+                <div class="lang-toggle">中文實驗步驟:</div>
+                <ol>
+                    <li>選擇滴定方向（酸滴入鹼 或 鹼滴入酸）。</li>
+                    <li>為你的圖表輸入合適的標題及坐標軸標籤。</li>
+                    <li>點擊「開始」，每次加入 1 cm³ 的試劑。</li>
+                    <li>觀察燒杯顏色變化及曲線繪製過程。</li>
+                </ol>
+            </div>
+        </div>
+    </div>
+
+    <!-- MAIN EXPERIMENT -->
+    <div class="main-container hidden" id="mainLab">
+        <div id="sim-area">
+            <h4 id="displayTitle" style="color: var(--primary-red); text-align: center; margin: 0 0 10px 0;"></h4>
+            <div class="apparatus">
+                <div class="burette"></div>
+                <div class="beaker"><div id="liquid" class="liquid"></div></div>
+            </div>
+            <div class="controls">
+                <button id="addBtn" onclick="stepForward()">Add 1 cm³</button>
+                <button onclick="location.reload()" style="background:#555">Reset Lab</button>
+                <div style="margin-top:15px; font-size: 1.1em; font-weight: bold;">
+                    Volume Added: <span id="vol-display">0</span> cm³<br>
+                    pH Value: <span id="ph-display" style="padding: 2px 8px; border-radius: 4px;">--</span>
+                </div>
+            </div>
+        </div>
+        <div id="chart-area">
+            <canvas id="phChart"></canvas>
+        </div>
+    </div>
+
+    <!-- POST-EXPERIMENT QUIZ -->
+    <div class="quiz-panel hidden" id="quizPanel">
+        <h3 style="color: #1976d2;">Post-Lab Assessment / 實驗後評核</h3>
+        <p>Based on your graph results, answer the following / 請根據你的圖表結果回答：</p>
+        
+        <div class="quiz-q">
+            <label>1. What is the pH of the "acid" used? / 實驗中所用「酸」的 pH 值是多少？</label>
+            <input type="number" id="ans1" placeholder="Enter number...">
+            <span id="f1" class="feedback"></span>
+        </div>
+
+        <div class="quiz-q">
+            <label>2. What is the volume added when the mixture is neutralised? / 當混合物中和時，加入了多少體積的試劑？</label>
+            <input type="number" id="ans2" placeholder="Enter cm³...">
+            <span id="f2" class="feedback"></span>
+        </div>
+
+        <div class="quiz-q">
+            <label>3. What is the pH of the "alkali" used? / 實驗中所用「鹼」的 pH 值是多少？</label>
+            <input type="number" id="ans3" placeholder="Enter number...">
+            <span id="f3" class="feedback"></span>
+        </div>
+
+        <button onclick="checkAnswers()" style="background: #2e7d32;">Check Answers / 檢查答案</button>
+    </div>
+
+    <script>
+        const datasets = {
+            alkaliToAcid: [
+                {x:0,y:1}, {x:1,y:1}, {x:2,y:1}, {x:3,y:1}, {x:4,y:1},
+                {x:5,y:2}, {x:6,y:2}, {x:7,y:2}, {x:8,y:2}, {x:9,y:2},
+                {x:10,y:7}, {x:11,y:12}, {x:12,y:13}, {x:13,y:13}, {x:14,y:13}, {x:15,y:13}
+            ],
+            acidToAlkali: [
+                {x:0,y:13}, {x:1,y:13}, {x:2,y:13}, {x:3,y:13}, {x:4,y:13},
+                {x:5,y:12}, {x:6,y:12}, {x:7,y:12}, {x:8,y:12}, {x:9,y:12},
+                {x:10,y:7}, {x:11,y:2}, {x:12,y:1}, {x:13,y:1}, {x:14,y:1}, {x:15,y:1}
+            ]
+        };
+
+        const phColors = {
+            1: "#ff0000", 2: "#ff7f00", 7: "#00ff00", 12: "#673ab7", 13: "#311b92"
+        };
+
+        let currentStep = 0;
+        let chart;
+        let activeData = [];
+
+        function startExperiment() {
+            const title = document.getElementById('graphTitle').value || "pH Titration Result";
+            const xLabel = document.getElementById('xAxisLabel').value || "Volume Added (cm³)";
+            const yLabel = document.getElementById('yAxisLabel').value || "pH Value";
+            const type = document.getElementById('expType').value;
+
+            activeData = datasets[type];
+            document.getElementById('setupPanel').classList.add('hidden');
+            document.getElementById('mainLab').classList.remove('hidden');
+            document.getElementById('displayTitle').innerText = title;
+
+            initChart(xLabel, yLabel);
+            updateSimulation();
+        }
+
+        function initChart(xLabel, yLabel) {
+            const ctx = document.getElementById('phChart').getContext('2d');
+            chart = new Chart(ctx, {
+                type: 'line',
+                data: {
+                    datasets: [{
+                        data: [activeData[0]],
+                        borderColor: '#d81b60',
+                        backgroundColor: '#d81b60',
+                        pointStyle: 'crossRot',
+                        pointRadius: 7,
+                        borderWidth: 2,
+                        tension: 0,
+                        showLine: true
+                    }]
+                },
+                options: {
+                    responsive: true,
+                    maintainAspectRatio: false,
+                    scales: {
+                        x: { 
+                            type: 'linear', min: 0, max: 15, 
+                            title: { display: true, text: xLabel, color: '#d81b60', font: {weight:'bold'} },
+                            ticks: { stepSize: 1, color: '#d81b60' },
+                            grid: { color: '#81d4fa' }
+                        },
+                        y: { 
+                            min: 0, max: 15, 
+                            title: { display: true, text: yLabel, color: '#d81b60', font: {weight:'bold'} },
+                            ticks: { stepSize: 2, color: '#d81b60' },
+                            grid: { color: '#81d4fa' }
+                        }
+                    },
+                    plugins: { legend: { display: false } }
+                }
+            });
+        }
+
+        function stepForward() {
+            if (currentStep < activeData.length - 1) {
+                currentStep++;
+                chart.data.datasets[0].data.push(activeData[currentStep]);
+                chart.update();
+                updateSimulation();
+
+                if (currentStep === activeData.length - 1) {
+                    document.getElementById('addBtn').disabled = true;
+                    document.getElementById('quizPanel').classList.remove('hidden');
+                    window.scrollTo({ top: document.body.scrollHeight, behavior: 'smooth' });
+                }
+            }
+        }
+
+        function updateSimulation() {
+            const data = activeData[currentStep];
+            const liquid = document.getElementById('liquid');
+            const display = document.getElementById('ph-display');
+            
+            document.getElementById('vol-display').innerText = data.x;
+            display.innerText = data.y;
+            display.style.backgroundColor = phColors[data.y];
+            display.style.color = "white";
+
+            liquid.style.backgroundColor = phColors[data.y];
+            liquid.style.height = (40 + (currentStep * 2.5)) + "%";
+        }
+
+        function checkAnswers() {
+            const q1 = document.getElementById('ans1').value;
+            const q2 = document.getElementById('ans2').value;
+            const q3 = document.getElementById('ans3').value;
+
+            // Correct answers based on the graph logic
+            setFeedback('f1', q1 == 1);
+            setFeedback('f2', q2 == 10);
+            setFeedback('f3', q3 == 13);
+        }
+
+        function setFeedback(id, isCorrect) {
+            const el = document.getElementById(id);
+            if (isCorrect) {
+                el.innerText = "✓ Correct / 正確";
+                el.className = "feedback correct";
+            } else {
+                el.innerText = "✗ Incorrect / 錯誤";
+                el.className = "feedback wrong";
+            }
+        }
+    </script>
+</body>
+</html>
