@@ -43,6 +43,8 @@
                 <a href="acid_alkali_matching.html">➜ S2 Game: Matching acid and alkali</a>
                 <a href="visual_ph_lab.html">➜ S2 pH paper testing game</a>
                 <a href="litmus_paper_test.html">➜ S2 litmus paper test</a>
+                <a href="compare_lesson.html">➜ S2 Compare the acidity or alkalinity</a>
+                <a href="neutralization_sim.html">➜ S2 Neutralization: Ploting graph</a>
                 
     </div>
 
