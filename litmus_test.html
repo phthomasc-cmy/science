@@ -1,0 +1,442 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Litmus Lab: Acid or Alkali?</title>
+    <link href="https://fonts.googleapis.com/css2?family=Fredoka+One&family=Poppins:wght@400;600&display=swap" rel="stylesheet">
+    <style>
+        :root {
+            --acid-color: #ff4757;
+            --alkali-color: #3742fa;
+            --neutral-color: #2ed573;
+            --bg-color: #2f3542;
+            --glass-color: rgba(255, 255, 255, 0.15);
+        }
+
+        body {
+            font-family: 'Poppins', sans-serif;
+            background-color: var(--bg-color);
+            background-image: radial-gradient(#57606f 1px, transparent 1px);
+            background-size: 20px 20px;
+            color: white;
+            margin: 0;
+            display: flex;
+            flex-direction: column;
+            align-items: center;
+            justify-content: center;
+            min-height: 100vh;
+            overflow: hidden;
+        }
+
+        /* --- Header & Score --- */
+        header {
+            text-align: center;
+            margin-bottom: 20px;
+        }
+        
+        h1 {
+            font-family: 'Fredoka One', cursive;
+            font-size: 3rem;
+            margin: 0;
+            color: #dfe4ea;
+            text-shadow: 3px 3px 0px #000;
+        }
+
+        .hud {
+            background: rgba(0,0,0,0.5);
+            padding: 10px 20px;
+            border-radius: 50px;
+            margin-top: 10px;
+            display: inline-block;
+            font-weight: 600;
+        }
+
+        /* --- Game Container --- */
+        .game-stage {
+            position: relative;
+            width: 320px;
+            height: 350px;
+            display: flex;
+            justify-content: center;
+            align-items: flex-end;
+            margin-bottom: 30px;
+        }
+
+        /* --- The Beaker --- */
+        .beaker {
+            width: 150px;
+            height: 200px;
+            background: var(--glass-color);
+            border: 4px solid rgba(255,255,255,0.8);
+            border-top: none;
+            border-radius: 0 0 20px 20px;
+            position: relative;
+            box-shadow: 0 0 20px rgba(255,255,255,0.1);
+            overflow: hidden;
+            z-index: 2;
+        }
+
+        .liquid {
+            position: absolute;
+            bottom: 0;
+            left: 0;
+            width: 100%;
+            height: 70%;
+            background: #f1c40f; /* Default liquid color */
+            transition: background 0.5s ease;
+            opacity: 0.8;
+        }
+
+        /* Bubbles animation */
+        .liquid::after {
+            content: '';
+            position: absolute;
+            width: 100%;
+            height: 100%;
+            background-image: 
+                radial-gradient(rgba(255,255,255,0.6) 2px, transparent 3px),
+                radial-gradient(rgba(255,255,255,0.6) 2px, transparent 3px);
+            background-size: 20px 20px;
+            background-position: 0 0, 10px 10px;
+            animation: bubble 4s linear infinite;
+            opacity: 0.3;
+        }
+
+        /* --- Litmus Paper --- */
+        .paper-holder {
+            position: absolute;
+            top: 0;
+            left: 50%;
+            transform: translateX(-50%);
+            z-index: 1; /* Behind beaker front glass but visible */
+            cursor: pointer;
+            transition: transform 0.3s;
+        }
+
+        .litmus-paper {
+            width: 30px;
+            height: 140px;
+            background: #f7d794; /* Default neutral paper color */
+            border-radius: 4px;
+            box-shadow: 2px 2px 5px rgba(0,0,0,0.3);
+            position: relative;
+            transition: background-color 0.2s;
+        }
+
+        .paper-label {
+            position: absolute;
+            top: -40px;
+            left: 50%;
+            transform: translateX(-50%);
+            background: white;
+            color: black;
+            padding: 5px 10px;
+            border-radius: 10px;
+            font-size: 0.8rem;
+            font-weight: bold;
+            white-space: nowrap;
+        }
+
+        /* --- Substance Label --- */
+        .substance-sign {
+            position: absolute;
+            bottom: 20px;
+            background: #fff;
+            color: #333;
+            padding: 8px 15px;
+            border-radius: 8px;
+            font-weight: bold;
+            box-shadow: 0 5px 15px rgba(0,0,0,0.3);
+            font-size: 1.2rem;
+            text-align: center;
+        }
+
+        /* --- Controls --- */
+        .controls {
+            display: flex;
+            gap: 15px;
+            z-index: 10;
+        }
+
+        .btn {
+            border: none;
+            padding: 15px 25px;
+            font-family: 'Fredoka One', cursive;
+            font-size: 1.1rem;
+            border-radius: 12px;
+            cursor: pointer;
+            transition: transform 0.1s, filter 0.2s;
+            color: white;
+            box-shadow: 0 6px 0 rgba(0,0,0,0.2);
+            text-transform: uppercase;
+        }
+
+        .btn:active {
+            transform: translateY(4px);
+            box-shadow: 0 2px 0 rgba(0,0,0,0.2);
+        }
+
+        .btn-test { background: #ffa502; color: #333; width: 100%; margin-bottom: 20px;}
+        .btn-acid { background: var(--acid-color); }
+        .btn-neutral { background: var(--neutral-color); }
+        .btn-alkali { background: var(--alkali-color); }
+        
+        .btn:disabled {
+            filter: grayscale(0.8);
+            cursor: not-allowed;
+            transform: none;
+        }
+
+        /* --- Animations --- */
+        @keyframes bubble {
+            0% { transform: translateY(0); }
+            100% { transform: translateY(-20px); }
+        }
+
+        @keyframes dip-strip {
+            0% { transform: translate(-50%, 0); }
+            40% { transform: translate(-50%, 100px); } /* Dip into liquid */
+            60% { transform: translate(-50%, 100px); }
+            100% { transform: translate(-50%, 0); } /* Come back out */
+        }
+
+        .dipping {
+            animation: dip-strip 2s ease-in-out forwards;
+        }
+
+        /* --- Feedback Modal --- */
+        .modal-overlay {
+            position: fixed;
+            top: 0; left: 0; width: 100%; height: 100%;
+            background: rgba(0,0,0,0.8);
+            display: none;
+            justify-content: center;
+            align-items: center;
+            z-index: 100;
+        }
+
+        .modal {
+            background: white;
+            color: #333;
+            padding: 30px;
+            border-radius: 20px;
+            text-align: center;
+            max-width: 400px;
+            animation: popIn 0.3s cubic-bezier(0.175, 0.885, 0.32, 1.275);
+        }
+
+        .result-icon { font-size: 4rem; display: block; margin-bottom: 10px; }
+        .result-title { font-family: 'Fredoka One'; font-size: 2rem; margin: 0; }
+        .result-desc { font-size: 1.1rem; margin: 15px 0; line-height: 1.5; }
+        .next-btn { background: #2f3542; color: white; padding: 10px 30px; border-radius: 50px; border:none; font-size: 1.2rem; cursor: pointer;}
+
+        @keyframes popIn {
+            from { transform: scale(0.5); opacity: 0; }
+            to { transform: scale(1); opacity: 1; }
+        }
+        
+        .action-area {
+            display: flex;
+            flex-direction: column;
+            align-items: center;
+        }
+        
+        .hidden { display: none; }
+
+    </style>
+</head>
+<body>
+
+    <header>
+        <h1>🧪 Litmus Lab</h1>
+        <div class="hud">
+            <span>Score: <span id="score">0</span></span> | 
+            <span>Round: <span id="round">1</span>/5</span>
+        </div>
+    </header>
+
+    <div class="game-stage">
+        <!-- The Litmus Paper -->
+        <div class="paper-holder" id="paperHolder">
+            <div class="paper-label">Test Strip</div>
+            <div class="litmus-paper" id="litmusStrip"></div>
+        </div>
+
+        <!-- The Beaker -->
+        <div class="beaker">
+            <div class="liquid" id="liquid"></div>
+        </div>
+        
+        <!-- Label on the beaker -->
+        <div class="substance-sign" id="substanceName">Mystery Liquid</div>
+    </div>
+
+    <div class="action-area">
+        <!-- Step 1: Test -->
+        <button class="btn btn-test" id="btnTest" onclick="dipPaper()">👇 Dip Paper</button>
+
+        <!-- Step 2: Decide (Hidden initially) -->
+        <div class="controls hidden" id="answerControls">
+            <button class="btn btn-acid" onclick="checkAnswer('acid')">Acid</button>
+            <button class="btn btn-neutral" onclick="checkAnswer('neutral')">Neutral</button>
+            <button class="btn btn-alkali" onclick="checkAnswer('alkali')">Alkali</button>
+        </div>
+    </div>
+
+    <!-- Feedback Modal -->
+    <div class="modal-overlay" id="feedbackModal">
+        <div class="modal">
+            <span class="result-icon" id="resultIcon">🎉</span>
+            <h2 class="result-title" id="resultTitle">Correct!</h2>
+            <p class="result-desc" id="resultDesc">Explanation goes here.</p>
+            <button class="next-btn" onclick="nextQuestion()">Next Liquid ➜</button>
+        </div>
+    </div>
+
+    <script>
+        // Game Data: Substances
+        const substances = [
+            { name: "Lemon Juice", type: "acid", ph: 2, color: "#f1c40f", explanation: "Lemon juice contains Citric Acid." },
+            { name: "Soap Water", type: "alkali", ph: 10, color: "#dff9fb", explanation: "Soaps contain weak alkalis (bases) like sodium hydroxide to clean grease." },
+            { name: "Vinegar", type: "acid", ph: 3, color: "rgba(230, 200, 150, 0.8)", explanation: "Vinegar is diluted Acetic Acid." },
+            { name: "Pure Water", type: "neutral", ph: 7, color: "rgba(200, 240, 255, 0.5)", explanation: "Pure water is neutral. It is neither acidic nor alkaline." },
+            { name: "Bleach", type: "alkali", ph: 12, color: "rgba(255, 255, 220, 0.8)", explanation: "Bleach is a strong alkali used for cleaning." },
+            { name: "Orange Juice", type: "acid", ph: 3.5, color: "#ff9f43", explanation: "Like lemons, oranges contain acidic juices." },
+            { name: "Baking Soda", type: "alkali", ph: 9, color: "rgba(255,255,255,0.9)", explanation: "Baking soda (Sodium Bicarbonate) is a common alkali." },
+            { name: "Salt Water", type: "neutral", ph: 7, color: "rgba(255,255,255,0.4)", explanation: "A solution of common salt (Sodium Chloride) and water is neutral." }
+        ];
+
+        // Game State
+        let currentRound = 0;
+        let score = 0;
+        let currentSubstance = null;
+        let isTesting = false;
+        const totalRounds = 5;
+
+        // DOM Elements
+        const uiScore = document.getElementById('score');
+        const uiRound = document.getElementById('round');
+        const uiSubstance = document.getElementById('substanceName');
+        const uiLiquid = document.getElementById('liquid');
+        const uiStrip = document.getElementById('litmusStrip');
+        const uiHolder = document.getElementById('paperHolder');
+        const btnTest = document.getElementById('btnTest');
+        const answersDiv = document.getElementById('answerControls');
+        const modal = document.getElementById('feedbackModal');
+        
+        // Modal Elements
+        const resIcon = document.getElementById('resultIcon');
+        const resTitle = document.getElementById('resultTitle');
+        const resDesc = document.getElementById('resultDesc');
+
+        // Initialize Game
+        function initGame() {
+            currentRound = 0;
+            score = 0;
+            // Shuffle questions
+            substances.sort(() => Math.random() - 0.5);
+            loadQuestion();
+        }
+
+        function loadQuestion() {
+            if (currentRound >= totalRounds) {
+                endGame();
+                return;
+            }
+
+            currentRound++;
+            uiRound.innerText = currentRound;
+            
+            // Get current substance
+            currentSubstance = substances[currentRound - 1];
+            
+            // UI Reset
+            uiSubstance.innerText = currentSubstance.name;
+            uiLiquid.style.background = currentSubstance.color;
+            uiStrip.style.background = "#f7d794"; // Reset to neutral paper color
+            
+            // Reset controls
+            btnTest.style.display = "block";
+            answersDiv.classList.add('hidden');
+            uiHolder.classList.remove('dipping');
+            isTesting = false;
+        }
+
+        function dipPaper() {
+            if(isTesting) return;
+            isTesting = true;
+
+            // Animate
+            uiHolder.classList.add('dipping');
+            btnTest.style.display = "none";
+
+            // Change color halfway through animation (when paper is in liquid)
+            setTimeout(() => {
+                let resultColor = "#f7d794"; // Default
+                if(currentSubstance.type === 'acid') resultColor = "#ff4757"; // Red
+                if(currentSubstance.type === 'alkali') resultColor = "#3742fa"; // Blue
+                
+                uiStrip.style.background = resultColor;
+            }, 1000);
+
+            // Show answers after animation
+            setTimeout(() => {
+                answersDiv.classList.remove('hidden');
+            }, 2000);
+        }
+
+        function checkAnswer(userChoice) {
+            let isCorrect = (userChoice === currentSubstance.type);
+            
+            if (isCorrect) {
+                score += 10;
+                uiScore.innerText = score;
+                showModal(true, currentSubstance);
+            } else {
+                showModal(false, currentSubstance);
+            }
+        }
+
+        function showModal(correct, data) {
+            modal.style.display = "flex";
+            
+            if(correct) {
+                resIcon.innerText = "🌟";
+                resTitle.innerText = "Correct!";
+                resTitle.style.color = "#2ed573";
+                resDesc.innerHTML = `Great job!<br>The litmus paper turned <b>${getColorName(data.type)}</b>.<br><br>${data.explanation}`;
+            } else {
+                resIcon.innerText = "❌";
+                resTitle.innerText = "Oops!";
+                resTitle.style.color = "#ff4757";
+                resDesc.innerHTML = `Not quite.<br>The litmus paper turned <b>${getColorName(data.type)}</b>, which means <b>${data.name}</b> is <b>${data.type.toUpperCase()}</b>.<br><br>${data.explanation}`;
+            }
+        }
+
+        function getColorName(type) {
+            if(type === 'acid') return "Red";
+            if(type === 'alkali') return "Blue";
+            return "No Change";
+        }
+
+        function nextQuestion() {
+            modal.style.display = "none";
+            loadQuestion();
+        }
+
+        function endGame() {
+            modal.style.display = "flex";
+            resIcon.innerText = "🏆";
+            resTitle.innerText = "Class Dismissed!";
+            resTitle.style.color = "#ffa502";
+            resDesc.innerHTML = `You scored <b>${score}</b> out of ${totalRounds * 10}!<br>Refresh the page to play again.`;
+            document.querySelector('.next-btn').style.display = 'none'; // Hide next button
+        }
+
+        // Start
+        initGame();
+
+    </script>
+</body>
+</html>
