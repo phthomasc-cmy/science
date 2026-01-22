@@ -66,6 +66,23 @@
         .paper-btn.active-red { background: var(--litmus-red); border-color: #a00; color: white; }
         .paper-btn.active-blue { background: var(--litmus-blue); border-color: #00a; color: white; }
 
+        .drop-btn {
+            width: 100%;
+            padding: 10px;
+            background: #27ae60;
+            color: white;
+            border: none;
+            border-radius: 5px;
+            cursor: pointer;
+            font-weight: bold;
+            font-size: 14px;
+            transition: background 0.2s;
+        }
+        
+        .drop-btn:hover {
+            background: #219150;
+        }
+
         /* --- Lab Area --- */
         .lab-bench {
             flex: 2;
@@ -115,6 +132,13 @@
             font-weight: bold;
             color: rgba(0,0,0,0.3);
             user-select: none;
+            /* Background transition exists, position transition added via JS class */
+            transition: background 0.3s; 
+        }
+
+        /* Class added via JS when clicking the button for smooth movement */
+        .animate-drop {
+            transition: top 0.8s cubic-bezier(0.25, 1, 0.5, 1), left 0.8s cubic-bezier(0.25, 1, 0.5, 1), background 0.3s !important;
         }
 
         /* --- Microscopic View --- */
@@ -178,6 +202,11 @@
                 </div>
             </div>
 
+            <div class="selector-group">
+                <label><b>3. Action:</b></label><br><br>
+                <button class="drop-btn" onclick="dropPaper()">Drop Paper into Beaker</button>
+            </div>
+
             <button class="reset-btn" onclick="resetLab()">Reset Experiment</button>
         </div>
 
@@ -195,7 +224,7 @@
             <b>Microscopic Ion View</b>
             <canvas id="micro-canvas" width="200" height="200"></canvas>
             <div class="status-box" id="feedback">
-                Drag the paper into the liquid!
+                Drag the paper or use the Drop button!
             </div>
         </div>
     </div>
@@ -222,6 +251,7 @@
 
         function resetStripPosition() {
             isDipped = false;
+            strip.classList.remove('animate-drop'); // Ensure instant movement for reset
             strip.style.top = '50px';
             strip.style.left = '50px';
             strip.style.background = currentPaperColor === 'red' ? 'var(--litmus-red)' : 'var(--litmus-blue)';
@@ -230,11 +260,19 @@
 
         // --- Dragging Logic ---
         let isDragging = false;
-        strip.addEventListener('mousedown', () => isDragging = true);
-        window.addEventListener('mouseup', () => {
-            isDragging = false;
-            checkDip();
+        
+        strip.addEventListener('mousedown', () => {
+            isDragging = true;
+            strip.classList.remove('animate-drop'); // Disable smooth transition so dragging is snappy
         });
+        
+        window.addEventListener('mouseup', () => {
+            if(isDragging) {
+                isDragging = false;
+                checkDip();
+            }
+        });
+
         window.addEventListener('mousemove', (e) => {
             if (!isDragging) return;
             const rect = bench.getBoundingClientRect();
@@ -242,10 +280,38 @@
             strip.style.top = (e.clientY - rect.top - 70) + 'px';
         });
 
+        // --- Button Drop Logic ---
+        function dropPaper() {
+            if(isDipped) return; // Prevent double dipping if already reacting
+
+            // 1. Calculate the center of the bench
+            const benchWidth = bench.offsetWidth;
+            const stripWidth = 35;
+            
+            // 2. Set Target Coordinates
+            // Left: Center of bench minus half the strip width
+            const targetLeft = (benchWidth / 2) - (stripWidth / 2);
+            // Top: Deep enough to hit liquid (approx 260px down)
+            const targetTop = 260;
+
+            // 3. Add animation class for smooth movement
+            strip.classList.add('animate-drop');
+
+            // 4. Move the strip
+            strip.style.left = targetLeft + 'px';
+            strip.style.top = targetTop + 'px';
+
+            // 5. Trigger reaction after animation finishes (0.8s)
+            setTimeout(() => {
+                performReaction();
+            }, 800);
+        }
+
         function checkDip() {
             const stripRect = strip.getBoundingClientRect();
             const liquidRect = document.getElementById('liquid-fill').getBoundingClientRect();
 
+            // Simple collision detection
             if (stripRect.bottom > liquidRect.top && 
                 stripRect.left > liquidRect.left && 
                 stripRect.right < liquidRect.right) {
