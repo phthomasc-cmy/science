@@ -46,6 +46,7 @@
                 <a href="visual_ph_lab.html">➜ S2 pH paper testing game</a>
                 <a href="pH_lab_challenge.html">➜ S2 pH lab challenge</a>
                 <a href="compare_lesson.html">➜ S2 Compare the acidity or alkalinity</a>
+                <a href="pH_tools.html">➜ S2 Compare different tools for measuring pH value</a>
                 <a href="neutralization_sim.html">➜ S2 Neutralization: Ploting graph</a>
                 
     </div>
