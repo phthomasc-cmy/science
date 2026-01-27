@@ -1,0 +1,211 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>pH Classification Game</title>
+    <style>
+        body {
+            font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif;
+            background-color: #f0f2f5;
+            display: flex;
+            flex-direction: column;
+            align-items: center;
+            padding: 20px;
+        }
+        .container {
+            background: white;
+            padding: 30px;
+            border-radius: 12px;
+            box-shadow: 0 4px 15px rgba(0,0,0,0.1);
+            max-width: 800px;
+            width: 100%;
+        }
+        h1 { color: #2c3e50; text-align: center; margin-bottom: 10px; }
+        p.instr { text-align: center; color: #666; margin-bottom: 30px; }
+        
+        .question-row {
+            display: grid;
+            grid-template-columns: 2fr 1.5fr 1.5fr;
+            gap: 15px;
+            align-items: center;
+            padding: 12px;
+            border-bottom: 1px solid #eee;
+        }
+        .question-row:nth-child(even) { background-color: #fafafa; }
+        .substance-name { font-weight: bold; color: #34495e; }
+        
+        select {
+            padding: 8px;
+            border-radius: 5px;
+            border: 1px solid #ccc;
+            width: 100%;
+            cursor: pointer;
+        }
+
+        .btn-container {
+            text-align: center;
+            margin-top: 30px;
+        }
+        button {
+            padding: 12px 30px;
+            font-size: 16px;
+            color: white;
+            background-color: #3498db;
+            border: none;
+            border-radius: 5px;
+            cursor: pointer;
+            transition: background 0.3s;
+        }
+        button:hover { background-color: #2980b9; }
+        
+        #result {
+            margin-top: 20px;
+            padding: 20px;
+            border-radius: 8px;
+            display: none;
+            text-align: center;
+            font-weight: bold;
+        }
+        .success { background-color: #d4edda; color: #155724; border: 1px solid #c3e6cb; }
+        .error-list { text-align: left; font-weight: normal; margin-top: 10px; font-size: 0.9em; }
+    </style>
+</head>
+<body>
+
+<div class="container">
+    <h1>pH Lab Challenge</h1>
+    <p class="instr">Classify the 10 random substances below and assign their pH values.</p>
+    
+    <div id="game-board">
+        <!-- Questions will be injected here -->
+    </div>
+
+    <div class="btn-container">
+        <button onclick="checkAnswers()">Submit Answers</button>
+        <button onclick="resetGame()" style="background-color: #95a5a6; margin-left: 10px;">New Game</button>
+    </div>
+
+    <div id="result"></div>
+</div>
+
+<script>
+    // Full database from the image provided
+    const substances = [
+        { name: "Baking Soda", type: "Alkaline", ph: ">7" },
+        { name: "Yoghurt", type: "Acidic", ph: "<7" },
+        { name: "Ammonia Solution", type: "Alkaline", ph: ">7" },
+        { name: "Sulphuric Acid", type: "Acidic", ph: "<7" },
+        { name: "Lime Water", type: "Alkaline", ph: ">7" },
+        { name: "Lotion", type: "Acidic", ph: "<7" }, // Skin lotions are usually slightly acidic (~5.5)
+        { name: "Distilled Water", type: "Neutral", ph: "=7" },
+        { name: "Bleach", type: "Alkaline", ph: ">7" },
+        { name: "Toothpaste", type: "Alkaline", ph: ">7" },
+        { name: "Orange", type: "Acidic", ph: "<7" },
+        { name: "Kitchen Cleaner", type: "Alkaline", ph: ">7" },
+        { name: "Sodium Hydroxide Solution", type: "Alkaline", ph: ">7" },
+        { name: "Lye Rice Dumplings", type: "Alkaline", ph: ">7" },
+        { name: "Preserved Duck Eggs", type: "Alkaline", ph: ">7" },
+        { name: "Alkaline Batteries", type: "Alkaline", ph: ">7" },
+        { name: "Lemon", type: "Acidic", ph: "<7" },
+        { name: "Vinegar", type: "Acidic", ph: "<7" },
+        { name: "Nitric Acid", type: "Acidic", ph: "<7" },
+        { name: "Soft Drinks", type: "Acidic", ph: "<7" },
+        { name: "Chinese Noodles", type: "Alkaline", ph: ">7" },
+        { name: "Soap", type: "Alkaline", ph: ">7" },
+        { name: "Toilet Cleaner", type: "Acidic", ph: "<7" },
+        { name: "Kiwi Fruit", type: "Acidic", ph: "<7" },
+        { name: "Hair Conditioner", type: "Acidic", ph: "<7" },
+        { name: "Hydrochloric Acid", type: "Acidic", ph: "<7" }
+    ];
+
+    let selectedSubstances = [];
+
+    function initGame() {
+        const resultDiv = document.getElementById('result');
+        resultDiv.style.display = 'none';
+        
+        // Shuffle and pick 10 random items
+        const shuffled = [...substances].sort(() => 0.5 - Math.random());
+        selectedSubstances = shuffled.slice(0, 10);
+
+        const board = document.getElementById('game-board');
+        board.innerHTML = `
+            <div class="question-row" style="background:#eee; font-weight:bold; border-radius:5px 5px 0 0;">
+                <div>Substance</div>
+                <div>Nature</div>
+                <div>pH Value</div>
+            </div>
+        `;
+
+        selectedSubstances.forEach((item, index) => {
+            board.innerHTML += `
+                <div class="question-row">
+                    <div class="substance-name">${item.name}</div>
+                    <div>
+                        <select id="type-${index}">
+                            <option value="">-- Select --</option>
+                            <option value="Acidic">Acidic</option>
+                            <option value="Neutral">Neutral</option>
+                            <option value="Alkaline">Alkaline</option>
+                        </select>
+                    </div>
+                    <div>
+                        <select id="ph-${index}">
+                            <option value="">-- Select --</option>
+                            <option value="<7">&lt; 7</option>
+                            <option value="=7">= 7</option>
+                            <option value=">7">&gt; 7</option>
+                        </select>
+                    </div>
+                </div>
+            `;
+        });
+    }
+
+    function checkAnswers() {
+        let score = 0;
+        let errors = [];
+
+        selectedSubstances.forEach((item, index) => {
+            const userType = document.getElementById(`type-${index}`).value;
+            const userPH = document.getElementById(`ph-${index}`).value;
+
+            if (userType === item.type && userPH === item.ph) {
+                score++;
+            } else {
+                errors.push(`${item.name} is ${item.type} (pH ${item.ph})`);
+            }
+        });
+
+        const resultDiv = document.getElementById('result');
+        resultDiv.style.display = 'block';
+        resultDiv.className = 'success';
+        
+        let message = `<h3>Your Score: ${score} / 10</h3>`;
+        
+        if (score === 10) {
+            message += `<p>Perfect! You are a chemistry expert!</p>`;
+        } else {
+            message += `<p>Keep practicing! Here are the ones you missed:</p>`;
+            message += `<div class="error-list"><ul>`;
+            errors.forEach(err => {
+                message += `<li>${err}</li>`;
+            });
+            message += `</ul></div>`;
+        }
+
+        resultDiv.innerHTML = message;
+        window.scrollTo(0, document.body.scrollHeight);
+    }
+
+    function resetGame() {
+        initGame();
+    }
+
+    // Start game on load
+    initGame();
+</script>
+
+</body>
+</html>
