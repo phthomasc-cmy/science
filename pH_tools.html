@@ -1,0 +1,244 @@
+<!DOCTYPE html>
+<html lang="zh-Hant">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>pH 測量工具：互動練習</title>
+    <style>
+        body {
+            font-family: 'Segoe UI', "Microsoft JhengHei", sans-serif;
+            background-color: #f4f7f6;
+            padding: 20px;
+            display: flex;
+            justify-content: center;
+        }
+        .container {
+            background: white;
+            padding: 30px;
+            border-radius: 15px;
+            box-shadow: 0 4px 20px rgba(0,0,0,0.08);
+            max-width: 850px;
+            width: 100%;
+        }
+        h1 { color: #2c3e50; text-align: center; margin-bottom: 10px; }
+        .instr { text-align: center; color: #7f8c8d; margin-bottom: 30px; }
+
+        .question-card {
+            background: #fff;
+            border: 1px solid #e0e0e0;
+            border-radius: 12px;
+            padding: 20px;
+            margin-bottom: 20px;
+            position: relative;
+        }
+        .statement-en {
+            font-size: 1.15em;
+            font-weight: bold;
+            color: #34495e;
+            margin-bottom: 10px;
+            display: block;
+        }
+        
+        /* 提示按鈕樣式 */
+        .hint-btn {
+            background: #ecf0f1;
+            border: 1px solid #bdc3c7;
+            color: #7f8c8d;
+            padding: 4px 12px;
+            border-radius: 4px;
+            cursor: pointer;
+            font-size: 0.85em;
+            margin-bottom: 10px;
+            transition: 0.2s;
+        }
+        .hint-btn:hover { background: #dee2e6; color: #2c3e50; }
+        
+        .hint-text {
+            display: none; /* 初始隱藏 */
+            color: #e67e22;
+            font-weight: bold;
+            margin-bottom: 15px;
+            padding: 5px 10px;
+            border-left: 3px solid #e67e22;
+            background: #fff8f0;
+        }
+
+        .options { display: flex; gap: 20px; flex-wrap: wrap; margin-top: 10px; }
+        label { cursor: pointer; display: flex; align-items: center; gap: 8px; font-size: 1em; }
+        input[type="radio"] { width: 18px; height: 18px; accent-color: #2980b9; cursor: pointer; }
+
+        .controls { text-align: center; margin-top: 40px; }
+        button.main-btn {
+            padding: 12px 45px;
+            font-size: 18px;
+            font-weight: bold;
+            color: white;
+            background-color: #2980b9;
+            border: none;
+            border-radius: 50px;
+            cursor: pointer;
+            transition: 0.3s;
+            margin: 5px;
+        }
+        button.main-btn:hover { background-color: #1f6391; transform: translateY(-2px); }
+        .reset-btn { background-color: #95a5a6 !important; }
+
+        #results-panel {
+            margin-top: 30px;
+            display: none;
+            padding: 25px;
+            border-radius: 10px;
+            border: 2px solid #2980b9;
+            background: #fdfdfd;
+        }
+        .feedback-item {
+            padding: 15px 0;
+            border-bottom: 1px solid #eee;
+        }
+        .correct { color: #27ae60; font-weight: bold; }
+        .incorrect { color: #e74c3c; font-weight: bold; }
+        .explanation {
+            margin-top: 10px;
+            font-size: 0.95em;
+            padding: 12px;
+            background: #f8f9fa;
+            border-radius: 5px;
+        }
+        .exp-en { color: #2980b9; margin-bottom: 4px; }
+        .exp-zh { color: #c0392b; font-weight: 500; }
+    </style>
+</head>
+<body>
+
+<div class="container">
+    <h1>pH 測量工具對比練習</h1>
+    <p class="instr">請閱讀英文描述，並判斷其所屬工具。若需翻譯，請點擊「提示 / Hint」。</p>
+    
+    <div id="quiz-container"></div>
+
+    <div class="controls">
+        <button class="main-btn" onclick="checkAnswers()">提交答案 (Submit)</button>
+        <button class="main-btn reset-btn" onclick="startNewGame()">重置 (Reset)</button>
+    </div>
+
+    <div id="results-panel">
+        <h2 id="final-score" style="text-align: center;"></h2>
+        <div id="feedback-list"></div>
+    </div>
+</div>
+
+<script>
+    const database = [
+        { en: "Not suitable for dark-coloured solutions", zh: "不適用於深色溶液", type: "UI", 
+          expEn: "The dark color of the solution masks the color change of the indicator.", 
+          expZh: "溶液本身的深色會遮蔽指示劑的顏色變化，導致難以觀察。" },
+        { en: "Cannot be reused", zh: "不能重複使用", type: "UI", 
+          expEn: "Universal indicators react chemically and are used up once.", 
+          expZh: "通用指示劑會發生化學反應且為一次性使用，用完即棄。" },
+        { en: "Measurement is subjective and less accurate", zh: "測量結果較為主觀，準確度較低", type: "UI", 
+          expEn: "Different people perceive color matching differently against the chart.", 
+          expZh: "不同的人在將顏色與色卡對比時會有不同的主觀感受，準確度較低。" },
+        { en: "Suitable for solutions of any colours", zh: "適用於任何顏色的溶液", type: "PHM", 
+          expEn: "Electronic probes measure electrical potential, not color.", 
+          expZh: "電子探頭測量的是電位差而非顏色，因此不受溶液本身顏色影響。" },
+        { en: "Can be reused", zh: "可以重複使用", type: "PHM", 
+          expEn: "The probe can be cleaned and used thousands of times.", 
+          expZh: "探頭在每次使用後清洗乾淨，即可重複使用成千上萬次。" },
+        { en: "Reading error is small; high accuracy", zh: "讀數誤差小，準確度高", type: "PHM", 
+          expEn: "Digital sensors provide precise numerical readings.", 
+          expZh: "數字傳感器能提供精確到小數點後的數值，避免人眼誤差。" },
+        { en: "Convenient (calibration is not needed)", zh: "使用方便（不需要校準）", type: "UI", 
+          expEn: "It can be used immediately without technical setup.", 
+          expZh: "可以直接使用，無需進行複雜的技術設置或校準步驟。" },
+        { en: "Less solution is needed", zh: "只需要較少分量的溶液", type: "UI", 
+          expEn: "A few drops or a small strip is enough for testing.", 
+          expZh: "只需幾滴溶液或一小條試紙便可完成測試，節省樣本。" },
+        { en: "Calibration is needed", zh: "需要校準", type: "PHM", 
+          expEn: "Must be calibrated with buffer solutions regularly to stay accurate.", 
+          expZh: "必須定期使用標準緩衝溶液進行校準，以確保讀數維持準確。" },
+        { en: "More solution is needed", zh: "需要較多分量的溶液", type: "PHM", 
+          expEn: "The glass bulb of the probe must be fully submerged.", 
+          expZh: "探頭底部的玻璃球必須完全浸沒在液體中才能獲得正確讀數。" },
+        { en: "Requires buffer solutions for maintenance", zh: "需要使用緩衝溶液維護", type: "PHM", 
+          expEn: "Specific solutions are needed to keep the sensor working correctly.", 
+          expZh: "需要特定的緩衝溶液來校準並保持感應器的正常運作。" },
+        { en: "Provides a quick pH estimate via color comparison", zh: "透過色卡快速估算 pH 值", type: "UI", 
+          expEn: "Useful for fast, non-precise monitoring in labs.", 
+          expZh: "適合在實驗室中進行快速但非精密的需求監測。" }
+    ];
+
+    let currentQuestions = [];
+
+    function startNewGame() {
+        document.getElementById('results-panel').style.display = 'none';
+        const container = document.getElementById('quiz-container');
+        container.innerHTML = '';
+        
+        // Shuffle and pick 10
+        currentQuestions = [...database].sort(() => 0.5 - Math.random()).slice(0, 10);
+
+        currentQuestions.forEach((q, i) => {
+            container.innerHTML += `
+                <div class="question-card">
+                    <span class="statement-en">${i + 1}. ${q.en}</span>
+                    
+                    <button class="hint-btn" onclick="toggleHint(${i})">提示 / Hint</button>
+                    <div id="hint-${i}" class="hint-text">${q.zh}</div>
+
+                    <div class="options">
+                        <label><input type="radio" name="q${i}" value="UI"> 通用指示劑 (Universal Indicator)</label>
+                        <label><input type="radio" name="q${i}" value="PHM"> pH 計 (pH Meter)</label>
+                    </div>
+                </div>
+            `;
+        });
+        window.scrollTo(0, 0);
+    }
+
+    function toggleHint(index) {
+        const hintDiv = document.getElementById(`hint-${index}`);
+        if (hintDiv.style.display === 'block') {
+            hintDiv.style.display = 'none';
+        } else {
+            hintDiv.style.display = 'block';
+        }
+    }
+
+    function checkAnswers() {
+        let score = 0;
+        let feedbackHTML = '';
+        
+        currentQuestions.forEach((q, i) => {
+            const selected = document.querySelector(`input[name="q${i}"]:checked`);
+            const userVal = selected ? selected.value : null;
+            const isCorrect = userVal === q.type;
+            
+            if (isCorrect) score++;
+
+            feedbackHTML += `
+                <div class="feedback-item">
+                    <span class="${isCorrect ? 'correct' : 'incorrect'}">
+                        ${isCorrect ? '✓ 正確 (Correct)' : '✗ 錯誤 (Incorrect)'} — ${q.en}
+                    </span><br>
+                    正確答案: <b>${q.type === 'UI' ? '通用指示劑' : 'pH 計'}</b>
+                    <div class="explanation">
+                        <div class="exp-en"><b>EN:</b> ${q.expEn}</div>
+                        <div class="exp-zh"><b>中:</b> ${q.expZh}</div>
+                    </div>
+                </div>
+            `;
+        });
+
+        document.getElementById('final-score').innerText = `最終得分 (Final Score): ${score} / 10`;
+        document.getElementById('feedback-list').innerHTML = feedbackHTML;
+        document.getElementById('results-panel').style.display = 'block';
+        
+        document.getElementById('results-panel').scrollIntoView({ behavior: 'smooth' });
+    }
+
+    // Initialize game
+    startNewGame();
+</script>
+
+</body>
+</html>
