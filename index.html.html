@@ -1,0 +1,277 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Science Ocean Learning Space</title>
+    <link href="https://fonts.googleapis.com/css2?family=Quicksand:wght@400;600&display=swap" rel="stylesheet">
+    <style>
+        :root {
+            --deep-ocean: #002b5b;
+            --seafoam: #57c5b6;
+            --coral: #ff8e71;
+            --glass: rgba(255, 255, 255, 0.15);
+            --glass-bright: rgba(255, 255, 255, 0.3);
+        }
+
+        body {
+            font-family: 'Quicksand', sans-serif;
+            margin: 0;
+            padding: 40px 20px;
+            min-height: 100vh;
+            background: linear-gradient(180deg, #004e92 0%, #000428 100%);
+            background-attachment: fixed;
+            color: white;
+            display: flex;
+            flex-direction: column;
+            align-items: center;
+        }
+
+        /* Bubbles */
+        body::before {
+            content: "";
+            position: fixed;
+            top: 0; left: 0; width: 100%; height: 100%;
+            background-image: radial-gradient(circle, white 1px, transparent 1px);
+            background-size: 50px 50px;
+            opacity: 0.1;
+            z-index: -1;
+            animation: bubbleMove 20s linear infinite;
+        }
+        @keyframes bubbleMove { from { background-position: 0 0; } to { background-position: 0 -500px; } }
+
+        .main-title {
+            width: 100%;
+            max-width: 900px;
+            background: var(--glass);
+            backdrop-filter: blur(10px);
+            border: 2px solid var(--seafoam);
+            border-radius: 50px;
+            padding: 15px 30px;
+            font-size: 2rem;
+            text-align: center;
+            margin-bottom: 50px;
+            box-shadow: 0 0 20px rgba(87, 197, 182, 0.3);
+        }
+
+        .columns-container {
+            display: grid;
+            grid-template-columns: repeat(3, 1fr);
+            gap: 25px;
+            width: 100%;
+            max-width: 1100px;
+        }
+
+        .column { display: flex; flex-direction: column; gap: 15px; }
+
+        /* Headers */
+        .s-header {
+            background: var(--coral);
+            color: #2c1a1a;
+            text-align: center;
+            padding: 12px;
+            font-size: 1.3rem;
+            font-weight: 600;
+            border-radius: 15px;
+            margin-bottom: 5px;
+        }
+
+        /* UNIT BOX & DROPDOWN */
+        .unit-wrapper {
+            background: var(--glass);
+            border: 1px solid rgba(255,255,255,0.2);
+            border-radius: 15px;
+            overflow: hidden;
+            transition: background 0.3s, transform 0.3s;
+        }
+
+        .unit-wrapper:hover {
+            background: var(--glass-bright);
+        }
+
+        .unit-btn {
+            padding: 18px;
+            text-align: center;
+            font-weight: 600;
+            cursor: pointer;
+            user-select: none;
+            display: flex;
+            justify-content: center;
+            align-items: center;
+            position: relative;
+        }
+
+        .unit-btn::after {
+            content: '🌊';
+            position: absolute;
+            right: 15px;
+            transition: transform 0.3s;
+        }
+
+        /* The Animation Logic */
+        .dropdown-content {
+            max-height: 0;
+            overflow: hidden;
+            transition: max-height 0.5s cubic-bezier(0, 1, 0, 1); /* Slide effect */
+            background: rgba(0, 0, 0, 0.2);
+        }
+
+        .unit-wrapper.active {
+            border-color: var(--seafoam);
+            transform: scale(1.02);
+            background: var(--glass-bright);
+        }
+
+        .unit-wrapper.active .dropdown-content {
+            max-height: 1000px; /* Large enough to fit content */
+            transition: max-height 1s ease-in-out;
+        }
+
+        .unit-wrapper.active .unit-btn::after {
+            transform: rotate(180deg);
+        }
+
+        /* List styling */
+        .link-list {
+            padding: 15px;
+            margin: 0;
+            list-style: none;
+            display: flex;
+            flex-direction: column;
+            gap: 10px;
+        }
+
+        .link-list a {
+            text-decoration: none;
+            color: #fff;
+            padding: 10px 15px;
+            background: rgba(255, 255, 255, 0.1);
+            border-radius: 10px;
+            font-size: 0.9rem;
+            display: flex;
+            align-items: center;
+            transition: all 0.3s;
+            border-left: 4px solid var(--seafoam);
+        }
+
+        .link-list a:hover {
+            background: var(--seafoam);
+            color: var(--deep-ocean);
+            transform: translateX(8px);
+        }
+
+        .link-list a::before { content: "⚓"; margin-right: 10px; }
+
+        @media (max-width: 850px) { .columns-container { grid-template-columns: 1fr; } }
+    </style>
+</head>
+<body>
+
+    <div class="main-title">Science Self-learning Space</div>
+
+    <div class="columns-container">
+        <div class="column"><div class="s-header">S1</div><div id="col-s1"></div></div>
+        <div class="column"><div class="s-header" style="background: var(--seafoam); color: #002b5b;">S2</div><div id="col-s2"></div></div>
+        <div class="column"><div class="s-header" style="background: #0077b6; color: white;">S3</div><div id="col-s3"></div></div>
+    </div>
+
+    <script>
+        /**
+         * 1. MANUALLY AMEND YOUR CONTENT HERE
+         */
+        const unitContentMap = {
+            1: [
+                { name: "Example", url: "#" },
+                { name: "Example", url: "#" }
+            ],
+            2: [
+                { name: "Example", url: "#" }
+            ],
+            3: [
+                { name: "Example", url: "#" },
+                { name: "Example", url: "#" }
+            ],
+            4: [ { name: "Unit 4 Content Link", url: "#" },
+                { name: "Example", url: "#" }
+ 		],
+            5: [ { name: "Unit 5 Content Link", url: "#" },
+                { name: "Example", url: "#" }
+ 		],
+            6: [ { name: "Unit 6 Content Link", url: "#" },
+                { name: "Example", url: "#" }
+ 		],
+            7: [ { name: "Unit 7 Content Link", url: "#" } ,
+                { name: "Example", url: "#" }
+		],
+            8: [ { name: "Unit 8 Content Link", url: "#" },
+                { name: "Example", url: "#" }
+ 		],
+            9: [ { name: "Unit 9 Content Link", url: "#" },
+                { name: "Example", url: "#" }
+ 		],
+            10: [ { name: "Unit 10 Content Link", url: "#" } ,
+                { name: "Example", url: "#" }
+		],
+            11: [ { name: "Unit 11 Content Link", url: "#" },
+                { name: "Example", url: "#" }
+ 		],
+            12: [ { name: "Unit 12 Content Link", url: "#" },
+                { name: "Example", url: "#" }
+ 		],
+            13: [ { name: "Unit 13 Content Link", url: "#" },
+                { name: "Example", url: "#" }
+ 		],
+            14: [ { name: "Unit 14 Content Link", url: "#" },
+                { name: "Example", url: "#" }
+		]
+        };
+
+        const columns = {
+            'col-s1': [1, 2, 3, 4, 5, 6],
+            'col-s2': [7, 8, 9, 10, 11],
+            'col-s3': [12, 13, 14]
+        };
+
+        function buildDashboard() {
+            for (const [colId, unitList] of Object.entries(columns)) {
+                const container = document.getElementById(colId);
+                
+                unitList.forEach(num => {
+                    const wrapper = document.createElement('div');
+                    wrapper.className = 'unit-wrapper';
+                    
+                    const links = unitContentMap[num] || [];
+                    const linksHTML = links.map(l => `<li><a href="${l.url}" target="_blank">${l.name}</a></li>`).join('');
+
+                    wrapper.innerHTML = `
+                        <div class="unit-btn">Unit ${num}</div>
+                        <div class="dropdown-content">
+                            <ul class="link-list">
+                                ${linksHTML || '<li><a>No links yet</a></li>'}
+                            </ul>
+                        </div>
+                    `;
+
+                    // CLICK FUNCTION
+                    wrapper.querySelector('.unit-btn').addEventListener('click', function() {
+                        const parent = this.parentElement;
+                        const isCurrentlyActive = parent.classList.contains('active');
+
+                        // Close all others
+                        document.querySelectorAll('.unit-wrapper').forEach(w => w.classList.remove('active'));
+
+                        // Toggle this one
+                        if (!isCurrentlyActive) {
+                            parent.classList.add('active');
+                        }
+                    });
+
+                    container.appendChild(wrapper);
+                });
+            }
+        }
+
+        buildDashboard();
+    </script>
+</body>
+</html>
