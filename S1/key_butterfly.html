@@ -1,0 +1,417 @@
+<!DOCTYPE html>
+<html lang="zh-Hant">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>蝴蝶分類檢索表學習系統</title>
+    <style>
+        body {
+            font-family: "Microsoft JhengHei", "Heiti TC", sans-serif;
+            background-color: #f9f9f9;
+            text-align: center;
+            padding: 20px;
+            color: #333;
+        }
+
+        h1 { margin-bottom: 20px; }
+
+        /* --- Tab 切換樣式 --- */
+        .tabs { margin-bottom: 20px; }
+        .tab-btn {
+            padding: 10px 20px;
+            cursor: pointer;
+            background: #e0e0e0;
+            border: none;
+            font-size: 16px;
+            border-radius: 5px;
+            margin: 0 5px;
+            transition: 0.3s;
+        }
+        .tab-btn:hover { background: #d0d0d0; }
+        .tab-btn.active {
+            background: #333;
+            color: white;
+        }
+        .view-section { display: none; animation: fadeIn 0.5s; }
+        .view-section.active { display: block; }
+
+        @keyframes fadeIn {
+            from { opacity: 0; } to { opacity: 1; }
+        }
+
+        /* --- 1. 視覺樹狀圖 (CSS Tree) 樣式 --- */
+        .tree ul {
+            padding-top: 20px; position: relative;
+            transition: all 0.5s;
+            display: flex; justify-content: center;
+        }
+        .tree li {
+            float: left; text-align: center;
+            list-style-type: none;
+            position: relative;
+            padding: 20px 5px 0 5px;
+            transition: all 0.5s;
+        }
+        /* 連接線 */
+        .tree li::before, .tree li::after {
+            content: ''; position: absolute; top: 0; right: 50%;
+            border-top: 2px solid #000; width: 50%; height: 20px;
+        }
+        .tree li::after { right: auto; left: 50%; border-left: 2px solid #000; }
+        .tree li:only-child::after, .tree li:only-child::before { display: none; }
+        .tree li:only-child { padding-top: 0;}
+        .tree li:first-child::before, .tree li:last-child::after { border: 0 none; }
+        .tree li:last-child::before{ border-right: 2px solid #000; border-radius: 0 5px 0 0; }
+        .tree li:first-child::after{ border-radius: 5px 0 0 0; }
+        .tree ul ul::before{
+            content: ''; position: absolute; top: 0; left: 50%;
+            border-left: 2px solid #000; width: 0; height: 20px;
+        }
+        /* 卡片樣式 */
+        .node {
+            display: inline-block; padding: 10px 15px;
+            text-decoration: none; font-size: 16px;
+            border-radius: 0; transition: all 0.5s; min-width: 120px;
+        }
+        .orange { background-color: #f8ceab; color: #5a3a2a; }
+        .blue { background-color: #ccecf9; color: #2c4a58; }
+        .green { background-color: #ccebc5; color: #2f4f2f; }
+        .result { border: 2px solid #000; background-color: #fff; font-weight: bold; }
+        .root-title { font-size: 24px; font-weight: bold; margin-bottom: 10px; display: inline-block; }
+
+        /* --- 2. 互動測驗樣式 --- */
+        .quiz-container {
+            max-width: 600px; margin: 0 auto; background: white;
+            padding: 40px; border-radius: 10px; box-shadow: 0 4px 10px rgba(0,0,0,0.1);
+        }
+        .question { font-size: 22px; margin-bottom: 30px; }
+        .options button {
+            display: block; width: 100%; padding: 15px; margin: 10px 0;
+            font-size: 18px; cursor: pointer; border: 2px solid #333;
+            background: white; transition: 0.2s;
+        }
+        .options button:hover { background: #f0f0f0; }
+        .final-result { font-size: 28px; color: #d9534f; font-weight: bold; }
+        .action-btn {
+            margin-top: 20px; padding: 10px 20px;
+            background-color: #5bc0de; color: white;
+            border: none; border-radius: 5px; cursor: pointer; font-size: 16px;
+        }
+
+        /* --- 3. 練習模式 (檢索表填空) 樣式 --- */
+        .practice-container {
+            max-width: 800px; margin: 0 auto; background: white;
+            padding: 30px; border-radius: 10px; box-shadow: 0 4px 10px rgba(0,0,0,0.1);
+            text-align: left;
+        }
+        .key-row {
+            display: flex; align-items: center; margin-bottom: 15px;
+            padding: 10px; border-bottom: 1px solid #eee; flex-wrap: wrap;
+        }
+        .key-index { font-weight: bold; width: 40px; color: #555; }
+        .key-select {
+            padding: 8px; font-size: 16px; margin: 0 10px;
+            border: 1px solid #ccc; border-radius: 4px;
+            background: #fff; flex-grow: 1;
+        }
+        .dots { flex-grow: 0; color: #999; letter-spacing: 2px; }
+        
+        /* 驗證樣式 */
+        .correct { border: 2px solid #4CAF50; background-color: #e8f5e9; color: #2e7d32; }
+        .incorrect { border: 2px solid #F44336; background-color: #ffebee; color: #c62828; }
+        
+        .feedback-area {
+            text-align: center; margin-top: 20px; font-weight: bold; font-size: 18px; height: 30px;
+        }
+
+        /* 讓手機版顯示正常 */
+        @media (max-width: 600px) {
+            .key-row { flex-direction: column; align-items: stretch; }
+            .key-select { margin: 5px 0; }
+            .dots { text-align: center; transform: rotate(90deg); margin: 5px 0; }
+            .key-index { align-self: center; }
+        }
+
+    </style>
+</head>
+<body>
+
+    <h1>蝴蝶分類學習系統</h1>
+
+    <div class="tabs">
+        <button class="tab-btn active" onclick="switchTab('tree')">1. 觀察分類圖表</button>
+        <button class="tab-btn" onclick="switchTab('quiz')">2. 互動辨識測驗</button>
+        <button class="tab-btn" onclick="switchTab('practice')">3. 建立檢索表練習</button>
+    </div>
+
+    <!-- 1. 視覺圖表區塊 -->
+    <div id="tree-view" class="view-section active">
+        <p style="color:#666;">請先觀察下方的分類特徵，這將是後續練習的基礎。</p>
+        <div class="tree">
+            <ul>
+                <li>
+                    <div class="root-title">蝴蝶 A 至 D</div>
+                    <ul>
+                        <li>
+                            <div class="node orange">翅膀有尾突</div>
+                            <ul><li><div class="node result">巴黎翠鳳蝶</div></li></ul>
+                        </li>
+                        <li>
+                            <div class="node orange">翅膀沒有尾突</div>
+                            <ul>
+                                <li>
+                                    <div class="node blue">翅膀有<br>黑色眼狀斑點</div>
+                                    <ul><li><div class="node result">矍眼蝶</div></li></ul>
+                                </li>
+                                <li>
+                                    <div class="node blue">翅膀沒有<br>黑色眼狀斑點</div>
+                                    <ul>
+                                        <li>
+                                            <div class="node green">翅膀有條紋</div>
+                                            <ul><li><div class="node result">金蟠蛺蝶</div></li></ul>
+                                        </li>
+                                        <li>
+                                            <div class="node green">翅膀沒有條紋</div>
+                                            <ul><li><div class="node result">橙粉蝶</div></li></ul>
+                                        </li>
+                                    </ul>
+                                </li>
+                            </ul>
+                        </li>
+                    </ul>
+                </li>
+            </ul>
+        </div>
+    </div>
+
+    <!-- 2. 互動測驗區塊 -->
+    <div id="quiz-view" class="view-section">
+        <div class="quiz-container">
+            <div id="quiz-content"></div>
+        </div>
+    </div>
+
+    <!-- 3. 建立檢索表練習區塊 -->
+    <div id="practice-view" class="view-section">
+        <div class="practice-container">
+            <h3>請依據分類圖，完成下方的短句式檢索表：</h3>
+            <p style="font-size: 14px; color: #666; margin-bottom: 20px;">提示：選擇正確的「特徵描述」以及對應的「蝴蝶名稱」或「跳轉步驟」。</p>
+
+            <!-- 步驟 1 -->
+            <div class="key-row">
+                <span class="key-index">1a.</span>
+                <select id="p1a-feat" class="key-select">
+                    <option value="">(請選擇特徵)</option>
+                    <option value="tail">翅膀有尾突</option>
+                    <option value="no-tail">翅膀沒有尾突</option>
+                </select>
+                <span class="dots">................</span>
+                <select id="p1a-res" class="key-select">
+                    <option value="">(請選擇結果)</option>
+                    <option value="paris">巴黎翠鳳蝶</option>
+                    <option value="goto2">前往第 2 題</option>
+                </select>
+            </div>
+            <div class="key-row">
+                <span class="key-index">1b.</span>
+                <select id="p1b-feat" class="key-select">
+                    <option value="">(請選擇特徵)</option>
+                    <option value="tail">翅膀有尾突</option>
+                    <option value="no-tail">翅膀沒有尾突</option>
+                </select>
+                <span class="dots">................</span>
+                <select id="p1b-res" class="key-select">
+                    <option value="">(請選擇結果)</option>
+                    <option value="paris">巴黎翠鳳蝶</option>
+                    <option value="goto2">前往第 2 題</option>
+                </select>
+            </div>
+
+            <!-- 步驟 2 -->
+            <div class="key-row">
+                <span class="key-index">2a.</span>
+                <select id="p2a-feat" class="key-select">
+                    <option value="">(請選擇特徵)</option>
+                    <option value="eye">翅膀有黑色眼狀斑點</option>
+                    <option value="no-eye">翅膀沒有黑色眼狀斑點</option>
+                </select>
+                <span class="dots">................</span>
+                <select id="p2a-res" class="key-select">
+                    <option value="">(請選擇結果)</option>
+                    <option value="dark">矍眼蝶</option>
+                    <option value="goto3">前往第 3 題</option>
+                </select>
+            </div>
+            <div class="key-row">
+                <span class="key-index">2b.</span>
+                <select id="p2b-feat" class="key-select">
+                    <option value="">(請選擇特徵)</option>
+                    <option value="eye">翅膀有黑色眼狀斑點</option>
+                    <option value="no-eye">翅膀沒有黑色眼狀斑點</option>
+                </select>
+                <span class="dots">................</span>
+                <select id="p2b-res" class="key-select">
+                    <option value="">(請選擇結果)</option>
+                    <option value="dark">矍眼蝶</option>
+                    <option value="goto3">前往第 3 題</option>
+                </select>
+            </div>
+
+            <!-- 步驟 3 -->
+            <div class="key-row">
+                <span class="key-index">3a.</span>
+                <select id="p3a-feat" class="key-select">
+                    <option value="">(請選擇特徵)</option>
+                    <option value="stripe">翅膀有條紋</option>
+                    <option value="no-stripe">翅膀沒有條紋</option>
+                </select>
+                <span class="dots">................</span>
+                <select id="p3a-res" class="key-select">
+                    <option value="">(請選擇結果)</option>
+                    <option value="golden">金蟠蛺蝶</option>
+                    <option value="orange">橙粉蝶</option>
+                </select>
+            </div>
+            <div class="key-row">
+                <span class="key-index">3b.</span>
+                <select id="p3b-feat" class="key-select">
+                    <option value="">(請選擇特徵)</option>
+                    <option value="stripe">翅膀有條紋</option>
+                    <option value="no-stripe">翅膀沒有條紋</option>
+                </select>
+                <span class="dots">................</span>
+                <select id="p3b-res" class="key-select">
+                    <option value="">(請選擇結果)</option>
+                    <option value="golden">金蟠蛺蝶</option>
+                    <option value="orange">橙粉蝶</option>
+                </select>
+            </div>
+
+            <div class="feedback-area" id="feedback-msg"></div>
+            
+            <div style="text-align: center;">
+                <button class="action-btn" onclick="checkPracticeAnswers()">核對答案</button>
+                <button class="action-btn" style="background-color: #f0ad4e;" onclick="resetPractice()">重新填寫</button>
+            </div>
+        </div>
+    </div>
+
+    <script>
+        // --- 頁面切換邏輯 ---
+        function switchTab(tabName) {
+            document.querySelectorAll('.view-section').forEach(el => el.classList.remove('active'));
+            document.querySelectorAll('.tab-btn').forEach(el => el.classList.remove('active'));
+            
+            // 找出對應的 Index 來設定按鈕 active 狀態
+            const tabMap = {'tree': 0, 'quiz': 1, 'practice': 2};
+            
+            document.getElementById(tabName + '-view').classList.add('active');
+            document.querySelectorAll('.tab-btn')[tabMap[tabName]].classList.add('active');
+
+            if(tabName === 'quiz') startQuiz();
+        }
+
+        // --- 互動測驗邏輯 (Quiz) ---
+        const quizData = {
+            question: "翅膀是否有「尾突」？",
+            yes: { result: "巴黎翠鳳蝶" },
+            no: {
+                question: "翅膀是否有「黑色眼狀斑點」？",
+                yes: { result: "矍眼蝶" },
+                no: {
+                    question: "翅膀是否有「條紋」？",
+                    yes: { result: "金蟠蛺蝶" },
+                    no: { result: "橙粉蝶" }
+                }
+            }
+        };
+
+        let currentNode = quizData;
+
+        function startQuiz() {
+            currentNode = quizData;
+            renderQuiz();
+        }
+
+        function renderQuiz() {
+            const container = document.getElementById('quiz-content');
+            if (currentNode.result) {
+                container.innerHTML = `
+                    <div class="final-result">結果：${currentNode.result}</div>
+                    <button class="action-btn" onclick="startQuiz()">重新辨識</button>
+                `;
+            } else {
+                container.innerHTML = `
+                    <div class="question">${currentNode.question}</div>
+                    <div class="options">
+                        <button onclick="answer('yes')">是 (Yes)</button>
+                        <button onclick="answer('no')">否 (No)</button>
+                    </div>
+                `;
+            }
+        }
+        function answer(choice) {
+            currentNode = currentNode[choice];
+            renderQuiz();
+        }
+
+        // --- 練習模式邏輯 (Practice) ---
+        
+        // 正確答案設定
+        const correctAnswers = {
+            "p1a-feat": "tail",      "p1a-res": "paris",
+            "p1b-feat": "no-tail",   "p1b-res": "goto2",
+            
+            "p2a-feat": "eye",       "p2a-res": "dark",
+            "p2b-feat": "no-eye",    "p2b-res": "goto3",
+            
+            "p3a-feat": "stripe",    "p3a-res": "golden",
+            "p3b-feat": "no-stripe", "p3b-res": "orange"
+        };
+
+        function checkPracticeAnswers() {
+            let allCorrect = true;
+            let count = 0;
+            let total = Object.keys(correctAnswers).length;
+
+            const feedbackEl = document.getElementById('feedback-msg');
+            feedbackEl.innerText = "";
+            feedbackEl.style.color = "#333";
+
+            for (let id in correctAnswers) {
+                const el = document.getElementById(id);
+                const val = el.value;
+
+                // 移除舊樣式
+                el.classList.remove('correct', 'incorrect');
+
+                if (val === correctAnswers[id]) {
+                    el.classList.add('correct');
+                    count++;
+                } else {
+                    el.classList.add('incorrect');
+                    allCorrect = false;
+                }
+            }
+
+            if (allCorrect) {
+                feedbackEl.innerText = "太棒了！你已經成功建立了正確的檢索表！";
+                feedbackEl.style.color = "#2e7d32";
+            } else {
+                feedbackEl.innerText = `還有部分錯誤喔 (正確率: ${count}/${total})，請再檢查一下紅色框框。`;
+                feedbackEl.style.color = "#c62828";
+            }
+        }
+
+        function resetPractice() {
+            // 清空所有 select
+            document.querySelectorAll('.practice-container select').forEach(el => {
+                el.value = "";
+                el.classList.remove('correct', 'incorrect');
+            });
+            document.getElementById('feedback-msg').innerText = "";
+        }
+    </script>
+
+</body>
+</html>
