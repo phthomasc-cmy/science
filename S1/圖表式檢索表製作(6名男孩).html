@@ -1,0 +1,382 @@
+<!DOCTYPE html>
+<html lang="zh-Hant">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>製作圖表式檢索表 (樹狀圖版)</title>
+    <style>
+        body {
+            font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif;
+            background-color: #f9f9f9;
+            margin: 0;
+            padding: 20px;
+            color: #333;
+        }
+        h1 {
+            text-align: center;
+            color: #2c3e50;
+        }
+        
+        /* 版面配置：改為上下排列，給予樹狀圖最大的寬度 */
+        .container {
+            display: flex;
+            flex-direction: column;
+            gap: 20px;
+            max-width: 100%;
+            margin: 0 auto;
+        }
+        .panel {
+            background: #fff;
+            padding: 20px;
+            border-radius: 10px;
+            box-shadow: 0 4px 8px rgba(0,0,0,0.1);
+        }
+
+        /* 資料表樣式 */
+        table {
+            width: 100%;
+            max-width: 800px;
+            margin: 0 auto 20px auto;
+            border-collapse: collapse;
+            text-align: center;
+        }
+        th, td {
+            border: 1px solid #bdc3c7;
+            padding: 8px;
+        }
+        th { background-color: #ecf0f1; color: #2c3e50; }
+        .check { color: #27ae60; font-weight: bold; }
+        .cross { color: #e74c3c; font-weight: bold; }
+
+        /* --- 樹狀圖核心 CSS (Organizational Chart Style) --- */
+        .tree-container {
+            width: 100%;
+            overflow-x: auto; /* 節點太多時可以左右滑動 */
+            text-align: center;
+            padding-top: 20px;
+            padding-bottom: 20px;
+        }
+
+        .tree {
+            display: inline-block;
+        }
+
+        .tree ul {
+            padding-top: 20px; position: relative;
+            transition: all 0.5s;
+            -webkit-transition: all 0.5s;
+            -moz-transition: all 0.5s;
+            display: flex;
+            justify-content: center;
+            padding-left: 0;
+        }
+
+        .tree li {
+            float: left; text-align: center;
+            list-style-type: none;
+            position: relative;
+            padding: 20px 5px 0 5px;
+            transition: all 0.5s;
+            -webkit-transition: all 0.5s;
+            -moz-transition: all 0.5s;
+        }
+
+        /* 畫連接線 */
+        .tree li::before, .tree li::after {
+            content: '';
+            position: absolute; top: 0; right: 50%;
+            border-top: 2px solid #7f8c8d;
+            width: 50%; height: 20px;
+        }
+        .tree li::after {
+            right: auto; left: 50%;
+            border-left: 2px solid #7f8c8d;
+        }
+        /* 移除第一個和最後一個元素的某些線條 */
+        .tree li:only-child::after, .tree li:only-child::before {
+            display: none;
+        }
+        .tree li:only-child { padding-top: 0; }
+        .tree li:first-child::before, .tree li:last-child::after {
+            border: 0 none;
+        }
+        /* 將第一/最後一個元素的垂直線接好 */
+        .tree li:first-child::after { border-radius: 5px 0 0 0; }
+        .tree li:last-child::before { border-right: 2px solid #7f8c8d; border-radius: 0 5px 0 0; }
+
+        /* 往下連接子節點的垂直線 */
+        .tree ul ul::before {
+            content: '';
+            position: absolute; top: 0; left: 50%;
+            border-left: 2px solid #7f8c8d;
+            width: 0; height: 20px;
+            margin-left: -1px;
+        }
+
+        /* 節點外觀設定 */
+        .node-box {
+            display: inline-flex;
+            flex-direction: column;
+            align-items: center;
+            justify-content: center;
+            padding: 5px 10px;
+            text-decoration: none;
+            color: #333;
+            font-family: inherit;
+            font-size: 16px;
+            min-width: 100px;
+        }
+
+        /* 分支標籤 (有耳垂、沒有耳垂) */
+        .branch-label {
+            font-weight: bold;
+            margin-bottom: 8px;
+            color: #2c3e50;
+        }
+
+        /* 學生結果名稱 (紅色字體，模仿手寫) */
+        .result-name {
+            color: #e74c3c;
+            font-weight: bold;
+            font-size: 1.3em;
+            margin-top: 5px;
+            letter-spacing: 2px;
+        }
+
+        .error-msg {
+            color: white;
+            background-color: #e74c3c;
+            padding: 2px 5px;
+            border-radius: 3px;
+            font-size: 0.9em;
+        }
+
+        select {
+            padding: 6px;
+            border: 1px dashed #7f8c8d;
+            border-radius: 4px;
+            background-color: #fff;
+            font-size: 1em;
+            outline: none;
+            cursor: pointer;
+            text-align: center;
+        }
+        select:hover { border-color: #3498db; }
+
+        /* 控制按鈕區 */
+        .controls {
+            margin-top: 20px;
+            padding-top: 20px;
+            border-top: 2px dashed #ecf0f1;
+            text-align: center;
+        }
+        button {
+            padding: 10px 20px;
+            font-size: 1.1em;
+            border: none;
+            border-radius: 5px;
+            cursor: pointer;
+            color: white;
+            margin: 0 5px;
+        }
+        .btn-check { background-color: #2ecc71; }
+        .btn-reset { background-color: #95a5a6; }
+        #result-msg { margin-top: 15px; font-size: 1.2em; font-weight: bold; }
+        
+    </style>
+</head>
+<body>
+
+    <h1>圖表式檢索表製作</h1>
+    
+    <div class="container">
+        <!-- 上方：資料表 -->
+        <div class="panel">
+            <table>
+                <tr>
+                    <th>姓名</th>
+                    <th>有耳垂 / 沒有耳垂</th>
+                    <th>可以捲舌 / 不可以捲舌</th>
+                    <th>有近視 / 沒有近視</th>
+                </tr>
+                <tr><td>湯姆</td><td class="check">✔</td><td class="check">✔</td><td class="cross">✘</td></tr>
+                <tr><td>保羅</td><td class="cross">✘</td><td class="cross">✘</td><td class="check">✔</td></tr>
+                <tr><td>亨利</td><td class="check">✔</td><td class="check">✔</td><td class="check">✔</td></tr>
+                <tr><td>偉信</td><td class="cross">✘</td><td class="cross">✘</td><td class="cross">✘</td></tr>
+                <tr><td>傑克</td><td class="cross">✘</td><td class="check">✔</td><td class="cross">✘</td></tr>
+                <tr><td>丹尼爾</td><td class="check">✔</td><td class="cross">✘</td><td class="check">✔</td></tr>
+            </table>
+            <div style="text-align: center; font-size: 0.9em; color: #7f8c8d;">
+                💡 請在下方的下拉選單中選擇特徵，系統會自動向下展開分支。
+            </div>
+        </div>
+
+        <!-- 下方：互動式樹狀圖 -->
+        <div class="panel">
+            <div class="tree-container">
+                <div class="tree" id="tree-root">
+                    <!-- Javascript 會將樹狀結構渲染在這裡 -->
+                </div>
+            </div>
+            
+            <div class="controls">
+                <button class="btn-check" onclick="checkStatus()">✔ 核對答案</button>
+                <button class="btn-reset" onclick="resetTree()">↺ 重新開始</button>
+                <div id="result-msg"></div>
+            </div>
+        </div>
+    </div>
+
+    <script>
+        // 資料庫定義 (true = 有, false = 沒有)
+        const db = {
+            "湯姆": { earlobe: true, tongue: true, myopia: false },
+            "保羅": { earlobe: false, tongue: false, myopia: true },
+            "亨利": { earlobe: true, tongue: true, myopia: true },
+            "偉信": { earlobe: false, tongue: false, myopia: false },
+            "傑克": { earlobe: false, tongue: true, myopia: false },
+            "丹尼爾": { earlobe: true, tongue: false, myopia: true }
+        };
+
+        // 定義標籤顯示文字
+        const traitLabels = {
+            earlobe: { yes: "有耳垂", no: "沒有耳垂" },
+            tongue: { yes: "可以捲舌", no: "不可以捲舌" },
+            myopia: { yes: "有近視", no: "沒有近視" }
+        };
+
+        let treeState = null;
+
+        function initTree() {
+            treeState = {
+                id: "root",
+                students: Object.keys(db),
+                trait: "",
+                yesNode: null,
+                noNode: null
+            };
+        }
+
+        function handleSelect(nodeId, selectedTrait) {
+            function updateNode(node) {
+                if (node.id === nodeId) {
+                    node.trait = selectedTrait;
+                    if (selectedTrait === "") {
+                        node.yesNode = null;
+                        node.noNode = null;
+                    } else {
+                        const yesStudents = node.students.filter(s => db[s][selectedTrait] === true);
+                        const noStudents = node.students.filter(s => db[s][selectedTrait] === false);
+
+                        node.yesNode = {
+                            id: nodeId + "_yes", students: yesStudents, trait: "", yesNode: null, noNode: null
+                        };
+                        node.noNode = {
+                            id: nodeId + "_no", students: noStudents, trait: "", yesNode: null, noNode: null
+                        };
+                    }
+                    return true;
+                }
+                if (node.yesNode && updateNode(node.yesNode)) return true;
+                if (node.noNode && updateNode(node.noNode)) return true;
+                return false;
+            }
+
+            updateNode(treeState);
+            document.getElementById('result-msg').innerHTML = '';
+            render();
+        }
+
+        // 遞迴渲染 HTML (改用 ul li 結構以繪製組織樹狀圖)
+        function renderNode(node, branchLabel = "六位學生") {
+            let html = `<li>`;
+            
+            html += `<div class="node-box">`;
+            
+            // 顯示當前分支的標籤 (如果是 Root 則顯示「六位學生」)
+            html += `<div class="branch-label">${branchLabel}</div>`;
+
+            // 判斷節點狀態
+            if (node.students.length === 1) {
+                // 成功分出一人，顯示名字 (紅色手寫風格)
+                html += `<div class="result-name">${node.students[0]}</div>`;
+            } else if (node.students.length === 0) {
+                // 空集合錯誤
+                html += `<div class="error-msg">無學生符合</div>`;
+            } else {
+                // 還有多人，顯示下拉選單
+                html += `
+                    <select onchange="handleSelect('${node.id}', this.value)">
+                        <option value="">-- 選擇特徵 --</option>
+                        <option value="earlobe" ${node.trait === 'earlobe' ? 'selected' : ''}>耳垂</option>
+                        <option value="tongue" ${node.trait === 'tongue' ? 'selected' : ''}>捲舌</option>
+                        <option value="myopia" ${node.trait === 'myopia' ? 'selected' : ''}>近視</option>
+                    </select>
+                `;
+            }
+            html += `</div>`; // node-box 結束
+
+            // 如果有選擇特徵，並且這個節點不是終點，則渲染子節點
+            if (node.trait && node.students.length > 1) {
+                html += `<ul>`;
+                
+                // 取得對應的「有/沒有」文字標籤
+                let labelYes = traitLabels[node.trait].yes;
+                let labelNo = traitLabels[node.trait].no;
+
+                html += renderNode(node.yesNode, labelYes);
+                html += renderNode(node.noNode, labelNo);
+                
+                html += `</ul>`;
+            }
+
+            html += `</li>`;
+            return html;
+        }
+
+        function render() {
+            const rootDiv = document.getElementById('tree-root');
+            // 加上最外層的 <ul>
+            rootDiv.innerHTML = `<ul>${renderNode(treeState)}</ul>`;
+        }
+
+        function resetTree() {
+            initTree();
+            document.getElementById('result-msg').innerHTML = '';
+            render();
+        }
+
+        function checkStatus() {
+            let isComplete = true;
+            let hasErrors = false;
+
+            function traverse(node) {
+                if (node.students.length === 0) hasErrors = true;
+                if (node.students.length > 1) {
+                    if (!node.trait) {
+                        isComplete = false;
+                    } else {
+                        traverse(node.yesNode);
+                        traverse(node.noNode);
+                    }
+                }
+            }
+            traverse(treeState);
+
+            const resultDiv = document.getElementById('result-msg');
+            if (hasErrors) {
+                resultDiv.innerHTML = `<span style="color: #e74c3c;">❌ 分類有誤：產生了沒有學生的空分支，請重新調整特徵。</span>`;
+            } else if (!isComplete) {
+                resultDiv.innerHTML = `<span style="color: #f39c12;">⚠️ 尚未完成：請繼續往下選擇特徵，直到每位學生都被單獨分出來。</span>`;
+            } else {
+                resultDiv.innerHTML = `<span style="color: #27ae60;">🎉 恭喜！檢索表製作正確，所有學生都已成功分類！</span>`;
+            }
+        }
+
+        window.onload = () => {
+            initTree();
+            render();
+        };
+    </script>
+</body>
+</html>

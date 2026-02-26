@@ -1,0 +1,413 @@
+<!DOCTYPE html>
+<html lang="zh-Hant">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>生物分類檢索表：軟體動物 (限制版)</title>
+    <style>
+        body {
+            font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif;
+            background-color: #f0f4f8;
+            margin: 0;
+            padding: 20px;
+            color: #333;
+        }
+        h1 {
+            text-align: center;
+            color: #2c3e50;
+            margin-bottom: 10px;
+        }
+        .subtitle {
+            text-align: center;
+            color: #7f8c8d;
+            margin-bottom: 30px;
+        }
+        
+        .container {
+            display: flex;
+            flex-direction: column;
+            gap: 20px;
+            max-width: 100%;
+            margin: 0 auto;
+        }
+        .panel {
+            background: #fff;
+            padding: 20px;
+            border-radius: 10px;
+            box-shadow: 0 4px 10px rgba(0,0,0,0.08);
+        }
+
+        /* 動物展示區 */
+        .animal-grid {
+            display: flex;
+            justify-content: center;
+            gap: 20px;
+            flex-wrap: wrap;
+            margin-bottom: 20px;
+        }
+        .animal-card {
+            border: 1px solid #ddd;
+            border-radius: 8px;
+            padding: 10px;
+            text-align: center;
+            width: 150px;
+            background: #fafafa;
+        }
+        .animal-img-placeholder {
+            width: 100%;
+            height: 100px;
+            background-color: #eee;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            border-radius: 5px;
+            margin-bottom: 10px;
+            font-size: 2em;
+            color: #aaa;
+        }
+        .animal-name {
+            font-weight: bold;
+            color: #2c3e50;
+        }
+        .animal-label {
+            font-size: 1.2em;
+            font-weight: bold;
+            color: #e67e22;
+            margin-bottom: 5px;
+        }
+
+        /* 資料表樣式 */
+        table {
+            width: 100%;
+            max-width: 800px;
+            margin: 0 auto;
+            border-collapse: collapse;
+            text-align: center;
+            font-size: 0.95em;
+        }
+        th, td {
+            border: 1px solid #bdc3c7;
+            padding: 10px;
+        }
+        th { background-color: #34495e; color: #fff; }
+        tr:nth-child(even) { background-color: #f9f9f9; }
+        .check { color: #27ae60; font-weight: bold; }
+        .cross { color: #e74c3c; font-weight: bold; }
+        .note { color: #95a5a6; font-size: 0.8em; }
+
+        /* --- 樹狀圖 CSS --- */
+        .tree-container {
+            width: 100%;
+            overflow-x: auto;
+            text-align: center;
+            padding: 20px 0;
+            min-height: 300px;
+        }
+
+        .tree { display: inline-block; }
+        .tree ul {
+            padding-top: 20px; position: relative;
+            display: flex; justify-content: center;
+            padding-left: 0;
+        }
+        .tree li {
+            float: left; text-align: center;
+            list-style-type: none;
+            position: relative;
+            padding: 20px 5px 0 5px;
+        }
+        /* 連接線 */
+        .tree li::before, .tree li::after {
+            content: ''; position: absolute; top: 0; right: 50%;
+            border-top: 2px solid #7f8c8d; width: 50%; height: 20px;
+        }
+        .tree li::after { right: auto; left: 50%; border-left: 2px solid #7f8c8d; }
+        .tree li:only-child::after, .tree li:only-child::before { display: none; }
+        .tree li:only-child { padding-top: 0; }
+        .tree li:first-child::before, .tree li:last-child::after { border: 0 none; }
+        .tree li:first-child::after { border-radius: 5px 0 0 0; }
+        .tree li:last-child::before { border-right: 2px solid #7f8c8d; border-radius: 0 5px 0 0; }
+        .tree ul ul::before {
+            content: ''; position: absolute; top: 0; left: 50%;
+            border-left: 2px solid #7f8c8d; width: 0; height: 20px;
+        }
+
+        /* 節點內容 */
+        .node-box {
+            display: inline-flex; flex-direction: column;
+            align-items: center; justify-content: center;
+            padding: 8px 12px;
+            background: #fff;
+            border: 1px solid #ddd;
+            border-radius: 5px;
+            box-shadow: 0 2px 5px rgba(0,0,0,0.05);
+            min-width: 120px;
+        }
+        .branch-label {
+            font-weight: bold; margin-bottom: 8px; color: #16a085;
+            font-size: 0.9em;
+        }
+        .result-name {
+            color: #c0392b; font-weight: bold; font-size: 1.2em;
+            margin-top: 5px; border: 2px solid #c0392b;
+            padding: 2px 8px; border-radius: 10px;
+            display: inline-block;
+        }
+        .error-msg {
+            color: #fff; background-color: #e74c3c;
+            padding: 4px 8px; border-radius: 4px; font-size: 0.85em;
+        }
+
+        select {
+            padding: 5px; border: 1px solid #3498db;
+            border-radius: 4px; background-color: #fafdff;
+            cursor: pointer; text-align: center; outline: none;
+        }
+
+        /* 按鈕區 */
+        .controls {
+            margin-top: 20px; padding-top: 20px;
+            border-top: 2px dashed #bdc3c7; text-align: center;
+        }
+        button {
+            padding: 10px 25px; font-size: 1em; border: none;
+            border-radius: 20px; cursor: pointer; color: white;
+            margin: 0 10px; transition: transform 0.1s;
+        }
+        button:active { transform: scale(0.95); }
+        .btn-check { background-color: #27ae60; }
+        .btn-reset { background-color: #7f8c8d; }
+        #result-msg { margin-top: 15px; font-size: 1.1em; font-weight: bold; }
+    </style>
+</head>
+<body>
+
+    <h1>生物檢索表製作 (軟體動物)</h1>
+    <div class="subtitle">請從「有殼/沒有殼」開始分類，將四種動物區分開來。</div>
+    
+    <div class="container">
+        <!-- 上方：動物資料與特徵表 -->
+        <div class="panel">
+            <div class="animal-grid">
+                <div class="animal-card">
+                    <div class="animal-label">A</div>
+                    <div class="animal-img-placeholder">🐌</div>
+                    <div class="animal-name">蝸牛</div>
+                </div>
+                <div class="animal-card">
+                    <div class="animal-label">B</div>
+                    <div class="animal-img-placeholder">🦪</div>
+                    <div class="animal-name">雙殼動物</div>
+                </div>
+                <div class="animal-card">
+                    <div class="animal-label">C</div>
+                    <div class="animal-img-placeholder">🐙</div>
+                    <div class="animal-name">章魚</div>
+                </div>
+                <div class="animal-card">
+                    <div class="animal-label">D</div>
+                    <div class="animal-img-placeholder">🐚</div>
+                    <div class="animal-name">帽貝</div>
+                </div>
+            </div>
+
+            <table>
+                <tr>
+                    <th>動物名稱</th>
+                    <th>有殼 / 沒有殼</th>
+                    <th>一塊殼 / 兩塊殼</th>
+                    <th>殼有捲曲 / 殼沒有捲曲</th>
+                </tr>
+                <tr>
+                    <td>A: 蝸牛</td>
+                    <td class="check">✔ 有殼</td>
+                    <td class="check">一塊殼</td>
+                    <td class="check">有捲曲</td>
+                </tr>
+                <tr>
+                    <td>B: 雙殼動物</td>
+                    <td class="check">✔ 有殼</td>
+                    <td class="cross">兩塊殼</td>
+                    <td class="cross">沒有捲曲</td>
+                </tr>
+                <tr>
+                    <td>C: 章魚</td>
+                    <td class="cross">✘ 沒有殼</td>
+                    <td class="note">-</td>
+                    <td class="note">-</td>
+                </tr>
+                <tr>
+                    <td>D: 帽貝</td>
+                    <td class="check">✔ 有殼</td>
+                    <td class="check">一塊殼</td>
+                    <td class="cross">沒有捲曲</td>
+                </tr>
+            </table>
+        </div>
+
+        <!-- 下方：互動式樹狀圖 -->
+        <div class="panel">
+            <div class="tree-container">
+                <div class="tree" id="tree-root"></div>
+            </div>
+            
+            <div class="controls">
+                <button class="btn-check" onclick="checkStatus()">✔ 核對答案</button>
+                <button class="btn-reset" onclick="resetTree()">↺ 重新開始</button>
+                <div id="result-msg"></div>
+            </div>
+        </div>
+    </div>
+
+    <script>
+        // 資料庫定義 
+        const db = {
+            "A: 蝸牛":    { has_shell: true,  one_piece: true,  is_coiled: true },
+            "B: 雙殼動物": { has_shell: true,  one_piece: false, is_coiled: false },
+            "C: 章魚":    { has_shell: false, one_piece: false, is_coiled: false },
+            "D: 帽貝":    { has_shell: true,  one_piece: true,  is_coiled: false }
+        };
+
+        // 特徵顯示文字
+        const traitLabels = {
+            has_shell: { yes: "有殼", no: "沒有殼" },
+            one_piece: { yes: "一塊殼", no: "兩塊殼" }, // 簡化顯示
+            is_coiled: { yes: "殼有捲曲", no: "殼沒有捲曲" }
+        };
+
+        let treeState = null;
+
+        function initTree() {
+            treeState = {
+                id: "root",
+                animals: Object.keys(db),
+                trait: "",
+                yesNode: null,
+                noNode: null
+            };
+        }
+
+        // 處理下拉選單變更
+        function handleSelect(nodeId, selectedTrait) {
+            function updateNode(node) {
+                if (node.id === nodeId) {
+                    node.trait = selectedTrait;
+                    if (selectedTrait === "") {
+                        node.yesNode = null;
+                        node.noNode = null;
+                    } else {
+                        const yesAnimals = node.animals.filter(a => db[a][selectedTrait] === true);
+                        const noAnimals = node.animals.filter(a => db[a][selectedTrait] === false);
+
+                        node.yesNode = {
+                            id: nodeId + "_yes", animals: yesAnimals, trait: "", yesNode: null, noNode: null
+                        };
+                        node.noNode = {
+                            id: nodeId + "_no", animals: noAnimals, trait: "", yesNode: null, noNode: null
+                        };
+                    }
+                    return true;
+                }
+                if (node.yesNode && updateNode(node.yesNode)) return true;
+                if (node.noNode && updateNode(node.noNode)) return true;
+                return false;
+            }
+
+            updateNode(treeState);
+            document.getElementById('result-msg').innerHTML = '';
+            render();
+        }
+
+        // 遞迴渲染 HTML
+        function renderNode(node, branchLabel = "四種動物") {
+            let html = `<li>`;
+            html += `<div class="node-box">`;
+            html += `<div class="branch-label">${branchLabel}</div>`;
+
+            // 判斷節點狀態
+            if (node.animals.length === 1) {
+                // 成功辨識
+                html += `<div class="result-name">${node.animals[0].split(':')[1]}</div>`;
+            } else if (node.animals.length === 0) {
+                // 空集合
+                html += `<div class="error-msg">無符合動物</div>`;
+            } else {
+                // 顯示下拉選單
+                html += `<select onchange="handleSelect('${node.id}', this.value)">`;
+                html += `<option value="">-- 選擇特徵 --</option>`;
+
+                // ** 重要修改：限制特徵顯示 **
+                if (node.id === 'root') {
+                    // 如果是第一層(Root)，強制只能選有殼沒殼
+                    html += `<option value="has_shell" ${node.trait === 'has_shell' ? 'selected' : ''}>有殼 / 沒有殼</option>`;
+                } else {
+                    // 如果是第二層之後，不顯示已經選過的「有殼沒殼」，只顯示剩下的
+                    html += `<option value="one_piece" ${node.trait === 'one_piece' ? 'selected' : ''}>一塊殼 / 兩塊殼</option>`;
+                    html += `<option value="is_coiled" ${node.trait === 'is_coiled' ? 'selected' : ''}>殼有捲曲 / 殼沒有捲曲</option>`;
+                }
+
+                html += `</select>`;
+            }
+            html += `</div>`;
+
+            // 渲染子節點
+            if (node.trait && node.animals.length > 1) {
+                html += `<ul>`;
+                let labelYes = traitLabels[node.trait].yes;
+                let labelNo = traitLabels[node.trait].no;
+                
+                // 特殊處理：若在 "有殼" 分支下選 "一塊殼"，No 分支顯示 "兩塊殼"
+                // 若在 "有殼" 分支下選 "有捲曲"，No 分支顯示 "沒有捲曲"
+                
+                html += renderNode(node.yesNode, labelYes);
+                html += renderNode(node.noNode, labelNo);
+                html += `</ul>`;
+            }
+
+            html += `</li>`;
+            return html;
+        }
+
+        function render() {
+            document.getElementById('tree-root').innerHTML = `<ul>${renderNode(treeState)}</ul>`;
+        }
+
+        function resetTree() {
+            initTree();
+            document.getElementById('result-msg').innerHTML = '';
+            render();
+        }
+
+        function checkStatus() {
+            let isComplete = true;
+            let hasErrors = false;
+
+            function traverse(node) {
+                if (node.animals.length === 0) hasErrors = true;
+                if (node.animals.length > 1) {
+                    if (!node.trait) isComplete = false;
+                    else {
+                        traverse(node.yesNode);
+                        traverse(node.noNode);
+                    }
+                }
+            }
+            traverse(treeState);
+
+            const resultDiv = document.getElementById('result-msg');
+            if (hasErrors) {
+                resultDiv.innerHTML = `<span style="color: #e74c3c;">❌ 分類有誤：出現了沒有動物的空分支。</span>`;
+            } else if (!isComplete) {
+                resultDiv.innerHTML = `<span style="color: #f39c12;">⚠️ 尚未完成：請繼續分類直到分出每一種動物。</span>`;
+            } else {
+                resultDiv.innerHTML = `<span style="color: #27ae60;">🎉 恭喜！檢索表製作完成！</span>`;
+            }
+        }
+
+        window.onload = () => {
+            initTree();
+            render();
+        };
+    </script>
+</body>
+</html>
