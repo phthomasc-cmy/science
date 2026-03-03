@@ -1,0 +1,415 @@
+<!DOCTYPE html>
+<html lang="zh-Hant">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>光學顯微鏡構造與功能配對</title>
+    <style>
+        body {
+            font-family: "Microsoft JhengHei", "Heiti TC", sans-serif;
+            background-color: #f4f4f9;
+            margin: 0;
+            padding: 20px;
+            display: flex;
+            flex-direction: column;
+            align-items: center;
+        }
+
+        h1 {
+            color: #333;
+            text-align: center;
+        }
+
+        .instruction {
+            background-color: #e8f4fd;
+            border: 1px solid #b6d4fe;
+            padding: 15px;
+            border-radius: 8px;
+            margin-bottom: 20px;
+            max-width: 800px;
+            text-align: center;
+            color: #0056b3;
+        }
+
+        .container {
+            display: flex;
+            flex-wrap: wrap;
+            gap: 20px;
+            max-width: 1000px;
+            width: 100%;
+            justify-content: center;
+        }
+
+        /* Table Styles */
+        .worksheet-area {
+            flex: 2;
+            min-width: 300px;
+        }
+
+        table {
+            width: 100%;
+            border-collapse: collapse;
+            background: white;
+            box-shadow: 0 4px 6px rgba(0,0,0,0.1);
+        }
+
+        th, td {
+            border: 1px solid #ccc;
+            padding: 10px;
+            vertical-align: middle;
+        }
+
+        th {
+            background-color: #f0f0f0;
+            font-weight: bold;
+            text-align: center;
+        }
+
+        td.number-col {
+            width: 40px;
+            text-align: center;
+            font-weight: bold;
+            color: #d9534f;
+        }
+
+        td.drop-zone {
+            width: 150px;
+            height: 50px;
+            background-color: #fafafa;
+            border: 2px dashed #ddd;
+            text-align: center;
+            transition: background 0.3s;
+            padding: 5px;
+        }
+
+        td.drop-zone.drag-over {
+            background-color: #e3f2fd;
+            border-color: #2196F3;
+        }
+
+        /* Draggable Items Styles */
+        .parts-pool {
+            flex: 1;
+            min-width: 250px;
+            background: white;
+            padding: 20px;
+            border-radius: 8px;
+            box-shadow: 0 4px 6px rgba(0,0,0,0.1);
+            align-self: flex-start;
+        }
+
+        .parts-pool h3 {
+            margin-top: 0;
+            text-align: center;
+            border-bottom: 2px solid #eee;
+            padding-bottom: 10px;
+        }
+
+        .draggable-item {
+            background-color: #4CAF50;
+            color: white;
+            padding: 10px;
+            margin: 8px 0;
+            border-radius: 4px;
+            cursor: grab;
+            text-align: center;
+            user-select: none;
+            box-shadow: 0 2px 4px rgba(0,0,0,0.2);
+            transition: transform 0.1s;
+        }
+
+        .draggable-item:active {
+            cursor: grabbing;
+        }
+
+        .draggable-item.selected {
+            background-color: #2E7D32;
+            border: 2px solid #FFD700;
+            transform: scale(1.05);
+        }
+
+        .controls {
+            margin-top: 20px;
+            display: flex;
+            gap: 15px;
+        }
+
+        button {
+            padding: 12px 24px;
+            border: none;
+            border-radius: 5px;
+            font-size: 16px;
+            cursor: pointer;
+            transition: background 0.2s;
+        }
+
+        #check-btn {
+            background-color: #2196F3;
+            color: white;
+        }
+        #check-btn:hover { background-color: #1976D2; }
+
+        #reset-btn {
+            background-color: #9E9E9E;
+            color: white;
+        }
+        #reset-btn:hover { background-color: #757575; }
+
+        /* Validation Styles */
+        .correct {
+            background-color: #d4edda !important;
+            border: 2px solid #28a745 !important;
+            color: #155724;
+        }
+        
+        .incorrect {
+            background-color: #f8d7da !important;
+            border: 2px solid #dc3545 !important;
+            color: #721c24;
+        }
+
+        .result-msg {
+            margin-top: 15px;
+            font-weight: bold;
+            font-size: 1.2em;
+        }
+
+        /* Image reference area */
+        .image-ref {
+            margin-top: 20px;
+            text-align: center;
+            font-size: 0.9em;
+            color: #666;
+            background: #fff;
+            padding: 10px;
+            border-radius: 8px;
+            box-shadow: 0 2px 4px rgba(0,0,0,0.1);
+            max-width: 300px;
+        }
+    </style>
+</head>
+<body>
+
+    <h1>光學顯微鏡構造配對</h1>
+    
+    <img src="microscope.jpg" alt="光學顯微鏡示意圖" style="max-width: 100%; height: auto; margin: 10px 0; border-radius: 8px; box-shadow: 0 2px 5px rgba(0,0,0,0.2);">
+    <div class="instruction">
+        <strong>使用說明：</strong> 請將右側的「顯微鏡部件」拖曳到左側表格中正確的對應位置。完成後點擊「檢查答案」。
+        <br><small>(手機/平板用戶：點擊部件選取，然後點擊空格放入)</small>
+    </div>
+
+    <div class="container">
+        <!-- Worksheet Table -->
+        <div class="worksheet-area">
+            <table>
+                <thead>
+                    <tr>
+                        <th style="width: 50px;">編號</th>
+                        <th>光學顯微鏡的部分 (請填入)</th>
+                        <th>功能 / 描述</th>
+                    </tr>
+                </thead>
+                <tbody id="quiz-table">
+                    <!-- Rows will be generated by JS -->
+                </tbody>
+            </table>
+        </div>
+
+        <!-- Draggable Parts Pool -->
+        <div class="parts-pool">
+            <h3>部件名稱庫</h3>
+            <div id="parts-container">
+                <!-- Draggable items will be generated by JS -->
+            </div>
+            
+            <div class="image-ref">
+                <p>提示：有些顯微鏡沒有內置光源，配備有<strong>反光鏡</strong>。</p>
+            </div>
+        </div>
+    </div>
+
+    <div class="controls">
+        <button id="check-btn" onclick="checkAnswers()">檢查答案</button>
+        <button id="reset-btn" onclick="resetQuiz()">重置</button>
+    </div>
+    
+    <div id="result-display" class="result-msg"></div>
+    
+    <script>
+        // Data derived from the image
+        const quizData = [
+            { id: 1, answer: "接目鏡", desc: "觀察標本時貼近眼睛的透鏡。" },
+            { id: 2, answer: "接物鏡", desc: "最接近玻片*的透鏡。" },
+            { id: 3, answer: "鏡筒", desc: "安裝了接目鏡和接物鏡。" }, // Body tube connects them
+            { id: 4, answer: "粗調節器", desc: "對焦時作較大幅度的調節。" },
+            { id: 5, answer: "細調節器", desc: "對焦時作較小幅度的調節。" },
+            { id: 6, answer: "載物台", desc: "放置玻片的地方。" },
+            { id: 7, answer: "載物台平移控制", desc: "調整玻片在載物台上的位置。" }, // Or mechanical stage
+            { id: 8, answer: "鏡臂", desc: "搬動顯微鏡時應握着的部分。" },
+            { id: 9, answer: "光欄", desc: "調節進入顯微鏡的光量。" },
+            { id: 10, answer: "光源或反光鏡", desc: "發出或反射光線，射向玻片。" },
+            { id: 11, answer: "鏡座", desc: "支撐顯微鏡。" }
+        ];
+
+        let selectedItem = null;
+
+        function init() {
+            const tableBody = document.getElementById('quiz-table');
+            const partsContainer = document.getElementById('parts-container');
+            
+            // Clear existing
+            tableBody.innerHTML = '';
+            partsContainer.innerHTML = '';
+            document.getElementById('result-display').innerText = '';
+
+            // 1. Create Table Rows
+            quizData.forEach(item => {
+                const tr = document.createElement('tr');
+                
+                // Number
+                const tdNum = document.createElement('td');
+                tdNum.className = 'number-col';
+                tdNum.innerText = item.id;
+                
+                // Drop Zone
+                const tdDrop = document.createElement('td');
+                tdDrop.className = 'drop-zone';
+                tdDrop.setAttribute('data-correct', item.answer);
+                tdDrop.setAttribute('ondrop', 'drop(event)');
+                tdDrop.setAttribute('ondragover', 'allowDrop(event)');
+                tdDrop.setAttribute('onclick', 'zoneClick(this)'); // For tap interaction
+                
+                // Description
+                const tdDesc = document.createElement('td');
+                tdDesc.innerText = item.desc;
+                
+                tr.appendChild(tdNum);
+                tr.appendChild(tdDrop);
+                tr.appendChild(tdDesc);
+                tableBody.appendChild(tr);
+            });
+
+            // 2. Create Draggable Parts (Shuffle them first)
+            const shuffledParts = [...quizData].sort(() => Math.random() - 0.5);
+            
+            shuffledParts.forEach(item => {
+                const div = document.createElement('div');
+                div.className = 'draggable-item';
+                div.id = 'part-' + item.id; // Unique ID
+                div.innerText = item.answer;
+                div.setAttribute('draggable', 'true');
+                div.setAttribute('ondragstart', 'drag(event)');
+                div.setAttribute('data-val', item.answer);
+                div.setAttribute('onclick', 'itemClick(this)'); // For tap interaction
+                partsContainer.appendChild(div);
+            });
+        }
+
+        // --- Drag and Drop Logic ---
+
+        function allowDrop(ev) {
+            ev.preventDefault();
+            ev.target.closest('.drop-zone').classList.add('drag-over');
+        }
+
+        function drag(ev) {
+            ev.dataTransfer.setData("text", ev.target.id);
+            // Clear selection for tap logic if dragging starts
+            if(selectedItem) {
+                selectedItem.classList.remove('selected');
+                selectedItem = null;
+            }
+        }
+
+        function drop(ev) {
+            ev.preventDefault();
+            const zone = ev.target.closest('.drop-zone');
+            zone.classList.remove('drag-over');
+            
+            const data = ev.dataTransfer.getData("text");
+            const draggedElement = document.getElementById(data);
+            
+            // If the zone already has an item, move it back to pool
+            if (zone.children.length > 0) {
+                document.getElementById('parts-container').appendChild(zone.children[0]);
+            }
+            
+            zone.appendChild(draggedElement);
+        }
+
+        // --- Tap/Click Logic (Mobile Friendly) ---
+
+        function itemClick(element) {
+            // If clicking an item already in a drop zone, move it back to pool
+            if (element.parentElement.classList.contains('drop-zone')) {
+                document.getElementById('parts-container').appendChild(element);
+                return;
+            }
+
+            // Deselect previous
+            if (selectedItem) {
+                selectedItem.classList.remove('selected');
+            }
+
+            // Select new
+            selectedItem = element;
+            selectedItem.classList.add('selected');
+        }
+
+        function zoneClick(zone) {
+            if (selectedItem) {
+                // If zone occupied, swap or return existing
+                if (zone.children.length > 0) {
+                    document.getElementById('parts-container').appendChild(zone.children[0]);
+                }
+                
+                zone.appendChild(selectedItem);
+                selectedItem.classList.remove('selected');
+                selectedItem = null;
+            }
+        }
+
+        // --- Validation Logic ---
+
+        function checkAnswers() {
+            const zones = document.querySelectorAll('.drop-zone');
+            let score = 0;
+            let total = zones.length;
+
+            zones.forEach(zone => {
+                const correctAnswer = zone.getAttribute('data-correct');
+                
+                // Reset classes
+                zone.classList.remove('correct', 'incorrect');
+                
+                if (zone.children.length > 0) {
+                    const userAnswer = zone.children[0].innerText; // Get text of the div inside
+                    if (userAnswer === correctAnswer) {
+                        zone.classList.add('correct');
+                        score++;
+                    } else {
+                        zone.classList.add('incorrect');
+                    }
+                } else {
+                    zone.classList.add('incorrect');
+                }
+            });
+
+            const resultDisplay = document.getElementById('result-display');
+            resultDisplay.innerText = `得分: ${score} / ${total}`;
+            resultDisplay.style.color = score === total ? 'green' : '#d9534f';
+            
+            if(score === total) {
+                alert("恭喜！全對！");
+            }
+        }
+
+        function resetQuiz() {
+            init();
+        }
+
+        // Start on load
+        window.onload = init;
+    </script>
+</body>
+</html>
