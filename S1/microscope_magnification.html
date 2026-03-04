@@ -1,0 +1,436 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Microscope Lab: Lens Length vs Magnification</title>
+    <style>
+        body {
+            font-family: 'Segoe UI', sans-serif;
+            background-color: #f4f6f9;
+            display: flex;
+            flex-direction: column;
+            align-items: center;
+            margin: 0;
+            padding: 20px;
+        }
+        h1 { color: #333; margin-bottom: 5px; }
+        p.subtitle { color: #666; margin-top: 0; margin-bottom: 25px; }
+
+        .container {
+            display: flex;
+            flex-wrap: wrap;
+            gap: 30px;
+            justify-content: center;
+            max-width: 1200px;
+        }
+
+        .panel {
+            background: white;
+            padding: 20px;
+            border-radius: 15px;
+            box-shadow: 0 5px 15px rgba(0,0,0,0.08);
+            display: flex;
+            flex-direction: column;
+            align-items: center;
+        }
+
+        /* Lab Model Canvas */
+        #lab-panel { flex: 1.5; min-width: 350px; }
+        canvas#labCanvas {
+            border: 1px solid #eee;
+            border-radius: 8px;
+            background: #fff;
+        }
+
+        /* Eye View Canvas */
+        #view-panel { 
+            flex: 1; 
+            min-width: 300px; 
+            background: #222; 
+            color: white;
+            border: 4px solid #444;
+        }
+        canvas#viewCanvas {
+            background: #fff;
+            border-radius: 50%; /* Circle view */
+            box-shadow: inset 0 0 30px rgba(0,0,0,0.6);
+            cursor: crosshair;
+        }
+
+        /* Controls */
+        .controls {
+            width: 100%;
+            margin-top: 20px;
+            display: grid;
+            grid-template-columns: 1fr 1fr;
+            gap: 15px;
+        }
+
+        .control-group {
+            background: #f8f9fa;
+            padding: 10px 15px;
+            border-radius: 8px;
+            border-left: 4px solid #007bff;
+        }
+
+        .control-group label {
+            display: block;
+            font-weight: bold;
+            font-size: 0.9em;
+            margin-bottom: 5px;
+            color: #444;
+        }
+
+        select {
+            width: 100%;
+            padding: 8px;
+            border-radius: 4px;
+            border: 1px solid #ccc;
+        }
+
+        .toggle-row {
+            grid-column: span 2;
+            display: flex;
+            justify-content: center;
+            align-items: center;
+            gap: 10px;
+            margin-top: 10px;
+            background: #e3f2fd;
+            padding: 10px;
+            border-radius: 8px;
+            color: #0d47a1;
+        }
+
+        /* Toggle Switch */
+        .switch {
+            position: relative;
+            display: inline-block;
+            width: 46px;
+            height: 24px;
+        }
+        .switch input { opacity: 0; width: 0; height: 0; }
+        .slider {
+            position: absolute;
+            cursor: pointer;
+            top: 0; left: 0; right: 0; bottom: 0;
+            background-color: #ccc;
+            transition: .4s;
+            border-radius: 34px;
+        }
+        .slider:before {
+            position: absolute;
+            content: "";
+            height: 16px;
+            width: 16px;
+            left: 4px;
+            bottom: 4px;
+            background-color: white;
+            transition: .4s;
+            border-radius: 50%;
+        }
+        input:checked + .slider { background-color: #2196F3; }
+        input:checked + .slider:before { transform: translateX(22px); }
+
+        .info-box {
+            margin-top: 15px;
+            font-size: 0.9em;
+            color: #555;
+            background: #fff3cd;
+            padding: 10px;
+            border-radius: 5px;
+            text-align: center;
+        }
+    </style>
+</head>
+<body>
+
+    <h1>Microscope Laboratory</h1>
+    <p class="subtitle">Observe how lens length relates to power, and how the image inverts.</p>
+
+    <div class="container">
+        
+        <!-- Left: Physical Model -->
+        <div class="panel" id="lab-panel">
+            <h3>Microscope Model</h3>
+            <canvas id="labCanvas" width="400" height="500"></canvas>
+
+            <div class="controls">
+                <div class="control-group">
+                    <label>Objective Lens (Bottom)</label>
+                    <select id="objSelect">
+                        <option value="4">4x (Scanning) - Short</option>
+                        <option value="10">10x (Low Power) - Medium</option>
+                        <option value="40">40x (High Power) - Long</option>
+                    </select>
+                </div>
+                <div class="control-group" style="border-left-color: #28a745;">
+                    <label>Eyepiece Lens (Top)</label>
+                    <select id="eyeSelect">
+                        <!-- Higher focal length (longer tube) = Lower Mag -->
+                        <option value="10">10x (Low Mag) - Long Tube</option>
+                        <option value="25">25x (High Mag) - Short Tube</option>
+                    </select>
+                </div>
+
+                <div class="toggle-row">
+                    <span><strong>X-Ray Mode</strong> (Show Internal Inverted Image)</span>
+                    <label class="switch">
+                        <input type="checkbox" id="xrayCheck">
+                        <span class="slider"></span>
+                    </label>
+                </div>
+            </div>
+        </div>
+
+        <!-- Right: View Through Lens -->
+        <div class="panel" id="view-panel">
+            <h3>View Through Eyepiece</h3>
+            <canvas id="viewCanvas" width="300" height="300"></canvas>
+            <div style="text-align:center; margin-top:20px;">
+                <h2 id="totalMagLabel" style="margin:0; color:#fff;">40x</h2>
+                <small style="color:#aaa;">Total Magnification</small>
+            </div>
+            <div class="info-box">
+                Notice: The image is <strong>inverted</strong> (flipped upside down and reversed) relative to the object on the stage.
+            </div>
+        </div>
+
+    </div>
+
+    <script>
+        const labCanvas = document.getElementById('labCanvas');
+        const lCtx = labCanvas.getContext('2d');
+        const viewCanvas = document.getElementById('viewCanvas');
+        const vCtx = viewCanvas.getContext('2d');
+
+        const objSelect = document.getElementById('objSelect');
+        const eyeSelect = document.getElementById('eyeSelect');
+        const xrayCheck = document.getElementById('xrayCheck');
+        const totalMagLabel = document.getElementById('totalMagLabel');
+
+        // State
+        let objPower = 4;
+        let eyePower = 10;
+        let isXray = false;
+
+        function update() {
+            objPower = parseInt(objSelect.value);
+            eyePower = parseInt(eyeSelect.value);
+            isXray = xrayCheck.checked;
+
+            drawLabModel();
+            drawView();
+            
+            totalMagLabel.innerText = (objPower * eyePower) + "x";
+        }
+
+        function drawLabModel() {
+            const w = labCanvas.width;
+            const h = labCanvas.height;
+            const cx = w / 2;
+            const stageY = 400;
+
+            lCtx.clearRect(0, 0, w, h);
+
+            // -- 1. Draw Stand/Stage --
+            lCtx.fillStyle = "#34495e";
+            lCtx.fillRect(cx - 70, stageY, 140, 15); // Stage
+            lCtx.fillStyle = "#bdc3c7";
+            lCtx.fillRect(cx - 20, stageY + 15, 40, 80); // Pillar
+            lCtx.fillStyle = "#2c3e50";
+            lCtx.beginPath();
+            lCtx.roundRect(cx - 80, stageY + 80, 160, 20, 10); // Base
+            lCtx.fill();
+
+            // -- 2. Draw Object (Slide) --
+            // Glass
+            lCtx.fillStyle = "rgba(200, 240, 255, 0.6)";
+            lCtx.strokeStyle = "#aac";
+            lCtx.fillRect(cx - 50, stageY - 4, 100, 4);
+            lCtx.strokeRect(cx - 50, stageY - 4, 100, 4);
+            // The Letter F (Upright on the stage)
+            lCtx.fillStyle = "#e74c3c";
+            lCtx.font = "bold 20px Arial";
+            lCtx.textAlign = "center";
+            lCtx.fillText("F", cx, stageY - 8); 
+            lCtx.fillStyle = "#555";
+            lCtx.font = "10px sans-serif";
+            lCtx.fillText("(Object)", cx + 60, stageY - 8);
+
+            // -- 3. Draw Objective Lens (Bottom) --
+            // Physics: Higher power objective = More glass elements = Physically Longer
+            let objLen = 0;
+            if(objPower === 4) objLen = 25;
+            if(objPower === 10) objLen = 45;
+            if(objPower === 40) objLen = 70;
+
+            const objY = stageY - 30 - objLen;
+
+            // Draw Objective Cylinder
+            lCtx.fillStyle = "#7f8c8d";
+            lCtx.fillRect(cx - 15, objY, 30, objLen);
+            // Objective Tip (Cone)
+            lCtx.beginPath();
+            lCtx.moveTo(cx - 15, stageY - 30);
+            lCtx.lineTo(cx + 15, stageY - 30);
+            lCtx.lineTo(cx + 8, stageY - 10);
+            lCtx.lineTo(cx - 8, stageY - 10);
+            lCtx.fill();
+
+            // Color Code Ring
+            lCtx.beginPath();
+            lCtx.lineWidth = 4;
+            if(objPower === 4) lCtx.strokeStyle = "red";
+            if(objPower === 10) lCtx.strokeStyle = "#f1c40f"; // Yellow
+            if(objPower === 40) lCtx.strokeStyle = "#3498db"; // Blue
+            lCtx.moveTo(cx - 15, objY + 10);
+            lCtx.lineTo(cx + 15, objY + 10);
+            lCtx.stroke();
+
+            // -- 4. Draw Body Tube --
+            const tubeHeight = 160;
+            const tubeTopY = objY - tubeHeight;
+            
+            if(isXray) {
+                // Transparent Tube
+                lCtx.strokeStyle = "#555";
+                lCtx.lineWidth = 2;
+                lCtx.setLineDash([5,5]);
+                lCtx.strokeRect(cx - 20, tubeTopY, 40, tubeHeight);
+                lCtx.setLineDash([]);
+
+                // --- X-RAY: The Internal Real Image ---
+                // Physics: The Objective creates this. It is INVERTED.
+                // It sits somewhere in the tube.
+                lCtx.save();
+                lCtx.translate(cx, tubeTopY + tubeHeight/2 + 20); 
+                lCtx.rotate(Math.PI); // Inverted!
+                
+                // Scale depends on Objective Power only
+                let ghostScale = 1;
+                if(objPower === 10) ghostScale = 2;
+                if(objPower === 40) ghostScale = 4;
+                
+                lCtx.scale(ghostScale, ghostScale);
+                lCtx.fillStyle = "rgba(255, 100, 0, 0.8)"; // Orange ghost
+                lCtx.font = "bold 14px Arial";
+                lCtx.textAlign = "center";
+                lCtx.textBaseline = "middle";
+                lCtx.fillText("F", 0, 0);
+                lCtx.restore();
+
+                // Arrow indicator
+                lCtx.fillStyle = "#d35400";
+                lCtx.font = "11px sans-serif";
+                lCtx.fillText("Real Image (Flipped)", cx + 35, tubeTopY + tubeHeight/2 + 20);
+
+            } else {
+                // Solid Black Tube
+                lCtx.fillStyle = "#2c3e50";
+                lCtx.fillRect(cx - 20, tubeTopY, 40, tubeHeight);
+            }
+
+            // -- 5. Draw Eyepiece (Top) --
+            // CONSTRAINT: High Power = Short Length. Low Power = Long Length.
+            let eyeLen = 0;
+            if(eyePower === 10) eyeLen = 70; // Low power, Long tube
+            if(eyePower === 25) eyeLen = 30; // High power, Short tube
+
+            const eyeY = tubeTopY - eyeLen;
+
+            // Draw Eyepiece Cylinder
+            lCtx.fillStyle = "#34495e";
+            lCtx.fillRect(cx - 18, eyeY, 36, eyeLen);
+            // Rim
+            lCtx.fillStyle = "#95a5a6";
+            lCtx.fillRect(cx - 22, eyeY - 5, 44, 5);
+
+            // Label Physical Length
+            lCtx.fillStyle = "#000";
+            lCtx.font = "italic 11px sans-serif";
+            if(eyePower === 10) {
+                lCtx.fillText("Longer (10x)", cx + 30, eyeY + eyeLen/2);
+            } else {
+                lCtx.fillText("Shorter (25x)", cx + 30, eyeY + eyeLen/2);
+            }
+
+            // -- 6. The Eye --
+            lCtx.beginPath();
+            lCtx.arc(cx, eyeY - 25, 15, Math.PI, 0);
+            lCtx.stroke();
+            lCtx.fillStyle = "black";
+            lCtx.beginPath();
+            lCtx.arc(cx, eyeY - 25, 6, 0, Math.PI*2);
+            lCtx.fill();
+        }
+
+        function drawView() {
+            const w = viewCanvas.width;
+            const h = viewCanvas.height;
+            const cx = w/2;
+            const cy = h/2;
+
+            vCtx.clearRect(0,0,w,h);
+
+            // 1. Calculate Visual Scale
+            // Determine relative scale based on powers
+            const baseScale = 1.0;
+            // Scale logic: objective contributes heavily, eyepiece multiplies it
+            const totalScale = (objPower * eyePower) / 20; 
+
+            vCtx.save();
+            vCtx.translate(cx, cy);
+            
+            // 2. ROTATION (Inversion)
+            // Microscope view is rotated 180 degrees relative to stage
+            vCtx.rotate(Math.PI); 
+
+            vCtx.scale(totalScale, totalScale);
+
+            // 3. Draw Grid (to make magnification obvious)
+            vCtx.strokeStyle = "#333";
+            vCtx.lineWidth = 0.2;
+            vCtx.beginPath();
+            const gridSize = 10;
+            for(let x=-100; x<=100; x+=gridSize) {
+                vCtx.moveTo(x, -100); vCtx.lineTo(x, 100);
+                vCtx.moveTo(-100, x); vCtx.lineTo(100, x);
+            }
+            vCtx.stroke();
+
+            // 4. Draw The Letter F
+            vCtx.fillStyle = "rgba(231, 76, 60, 0.9)";
+            vCtx.font = "bold 12px Arial"; // Base size, scaled by transforms
+            vCtx.textAlign = "center";
+            vCtx.textBaseline = "middle";
+            vCtx.fillText("F", 0, 0);
+
+            // 5. Draw some detail/texture (cellular look)
+            vCtx.fillStyle = "rgba(0,0,0,0.1)";
+            vCtx.beginPath();
+            vCtx.arc(5, -5, 2, 0, Math.PI*2);
+            vCtx.fill();
+            vCtx.beginPath();
+            vCtx.arc(-4, 6, 1.5, 0, Math.PI*2);
+            vCtx.fill();
+
+            vCtx.restore();
+
+            // 6. Vignette (Scope Circle)
+            const grad = vCtx.createRadialGradient(cx, cy, cx-30, cx, cy, cx);
+            grad.addColorStop(0, "rgba(0,0,0,0)");
+            grad.addColorStop(1, "rgba(0,0,0,1)");
+            vCtx.fillStyle = grad;
+            vCtx.fillRect(0,0,w,h);
+        }
+
+        objSelect.addEventListener('change', update);
+        eyeSelect.addEventListener('change', update);
+        xrayCheck.addEventListener('change', update);
+
+        update();
+
+    </script>
+</body>
+</html>

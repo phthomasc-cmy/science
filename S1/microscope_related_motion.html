@@ -1,0 +1,331 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Microscope Stage: Relative Motion</title>
+    <style>
+        body {
+            font-family: 'Segoe UI', sans-serif;
+            background-color: #f0f2f5;
+            display: flex;
+            flex-direction: column;
+            align-items: center;
+            padding: 20px;
+            user-select: none; /* Prevent text selection while clicking fast */
+        }
+
+        h1 { color: #333; margin-bottom: 5px; }
+        p.subtitle { color: #666; margin-top: 0; margin-bottom: 30px; }
+
+        .container {
+            display: flex;
+            flex-wrap: wrap;
+            gap: 40px;
+            justify-content: center;
+            align-items: flex-start;
+        }
+
+        /* CARD STYLING */
+        .card {
+            background: white;
+            padding: 20px;
+            border-radius: 15px;
+            box-shadow: 0 10px 25px rgba(0,0,0,0.1);
+            display: flex;
+            flex-direction: column;
+            align-items: center;
+            position: relative;
+        }
+
+        h3 { margin: 0 0 15px 0; color: #444; }
+
+        /* STAGE CANVAS (Square) */
+        canvas#stageCanvas {
+            border: 1px solid #999;
+            background-color: #333; /* Dark stage color */
+            border-radius: 4px;
+            cursor: move;
+        }
+
+        /* EYEPIECE CANVAS (Circle) */
+        canvas#viewCanvas {
+            border-radius: 50%;
+            border: 5px solid #222;
+            background-color: #fff;
+            box-shadow: inset 0 0 20px rgba(0,0,0,0.5);
+        }
+
+        /* CONTROLS */
+        .controls-area {
+            margin-top: 20px;
+            display: grid;
+            grid-template-columns: 60px 60px 60px;
+            grid-template-rows: 60px 60px;
+            gap: 5px;
+        }
+
+        .btn {
+            width: 60px;
+            height: 60px;
+            font-size: 24px;
+            background-color: #e0e0e0;
+            border: none;
+            border-radius: 8px;
+            cursor: pointer;
+            transition: background 0.1s;
+            display: flex;
+            justify-content: center;
+            align-items: center;
+            box-shadow: 0 4px #999;
+        }
+        .btn:active {
+            box-shadow: 0 2px #666;
+            transform: translateY(2px);
+            background-color: #d0d0d0;
+        }
+        .btn-up { grid-column: 2; grid-row: 1; }
+        .btn-left { grid-column: 1; grid-row: 2; }
+        .btn-down { grid-column: 2; grid-row: 2; }
+        .btn-right { grid-column: 3; grid-row: 2; }
+
+        /* INSTRUCTION LABELS */
+        .label-tag {
+            margin-top: 10px;
+            font-weight: bold;
+            color: #007bff;
+        }
+        .warning {
+            color: #e74c3c;
+            font-size: 0.9em;
+            margin-top: 5px;
+        }
+
+        /* ARROW ANNOTATIONS */
+        .arrow-hint {
+            position: absolute;
+            font-weight: bold;
+            color: rgba(255,255,255,0.5);
+            pointer-events: none;
+        }
+    </style>
+</head>
+<body>
+
+    <h1>Microscope Slide Navigation</h1>
+    <p class="subtitle">Use the buttons or Arrow Keys to move the slide. Observe the direction of the image.</p>
+
+    <div class="container">
+        
+        <!-- LEFT: REAL WORLD STAGE -->
+        <div class="card">
+            <h3>1. The Stage (Real World)</h3>
+            <canvas id="stageCanvas" width="300" height="300"></canvas>
+            
+            <div class="controls-area">
+                <button class="btn btn-up" id="btnUp">⬆</button>
+                <button class="btn btn-left" id="btnLeft">⬅</button>
+                <button class="btn btn-down" id="btnDown">⬇</button>
+                <button class="btn btn-right" id="btnRight">➡</button>
+            </div>
+            <div class="label-tag">Move the Slide</div>
+            <p style="font-size: 0.85em; color: #666; text-align: center; max-width: 250px;">
+                You are physically pushing the glass slide on the stage.
+            </p>
+        </div>
+
+        <!-- RIGHT: MICROSCOPE VIEW -->
+        <div class="card">
+            <h3>2. Eyepiece View</h3>
+            <canvas id="viewCanvas" width="300" height="300"></canvas>
+            
+            <div class="label-tag" style="margin-top: 30px;">Resulting Image</div>
+            <p style="font-size: 0.85em; color: #666; text-align: center; max-width: 250px;">
+                Notice: The image is inverted.<br>
+                <strong>If slide goes Right -> Image goes Left.</strong>
+            </p>
+        </div>
+    </div>
+
+    <script>
+        const stageC = document.getElementById('stageCanvas');
+        const sCtx = stageC.getContext('2d');
+        const viewC = document.getElementById('viewCanvas');
+        const vCtx = viewC.getContext('2d');
+
+        // State: Position of the slide relative to the center of the stage
+        // (0,0) means the letter F is exactly under the lens
+        let slideX = 0;
+        let slideY = 0;
+        
+        const moveSpeed = 5;
+        const limits = 80; // Limit how far slide can move
+
+        // Drawing Constants
+        const glassWidth = 200;
+        const glassHeight = 70;
+        
+        function drawStage() {
+            const w = stageC.width;
+            const h = stageC.height;
+            const cx = w/2;
+            const cy = h/2;
+
+            sCtx.clearRect(0, 0, w, h);
+
+            // 1. Draw The Stage Base (Dark)
+            sCtx.fillStyle = "#2c3e50";
+            sCtx.fillRect(0, 0, w, h);
+
+            // 2. Draw the Hole (The Objective Lens Light Source)
+            // This is fixed in the center of the canvas
+            sCtx.beginPath();
+            sCtx.arc(cx, cy, 30, 0, Math.PI*2);
+            sCtx.fillStyle = "#fff"; // Light coming through
+            sCtx.fill();
+            sCtx.strokeStyle = "#999";
+            sCtx.stroke();
+
+            // 3. Draw the Glass Slide
+            // The slide moves based on slideX/Y
+            // If slideX is positive (moved right), we draw it to the right of center
+            const currentX = cx + slideX;
+            const currentY = cy + slideY;
+
+            sCtx.fillStyle = "rgba(200, 230, 255, 0.4)"; // Glassy blue
+            sCtx.strokeStyle = "rgba(255,255,255,0.6)";
+            sCtx.lineWidth = 2;
+            sCtx.fillRect(currentX - glassWidth/2, currentY - glassHeight/2, glassWidth, glassHeight);
+            sCtx.strokeRect(currentX - glassWidth/2, currentY - glassHeight/2, glassWidth, glassHeight);
+
+            // 4. Draw the Specimen (Letter F)
+            // Drawn upright on the slide
+            sCtx.save();
+            sCtx.translate(currentX, currentY);
+            sCtx.fillStyle = "red"; // The specimen color
+            sCtx.font = "bold 24px Arial";
+            sCtx.textAlign = "center";
+            sCtx.textBaseline = "middle";
+            sCtx.fillText("F", 0, 0);
+            
+            // Add a small arrow on the slide itself to show orientation
+            sCtx.fillStyle = "#fff";
+            sCtx.font = "10px Arial";
+            sCtx.fillText("UP", 0, -15);
+            sCtx.restore();
+
+            // 5. Draw Stage Clips (Fixed, to show the slide is moving under them)
+            sCtx.fillStyle = "#95a5a6";
+            sCtx.fillRect(cx - 80, cy - 60, 10, 80); // Left clip arm
+            sCtx.fillRect(cx + 70, cy - 60, 10, 80); // Right clip arm
+            // Clip tips
+            sCtx.fillStyle = "#bdc3c7"; 
+            sCtx.beginPath(); sCtx.arc(cx - 75, cy + 20, 5, 0, Math.PI*2); sCtx.fill();
+            sCtx.beginPath(); sCtx.arc(cx + 75, cy + 20, 5, 0, Math.PI*2); sCtx.fill();
+        }
+
+        function drawEyepiece() {
+            const w = viewC.width;
+            const h = viewC.height;
+            const cx = w/2;
+            const cy = h/2;
+
+            vCtx.clearRect(0, 0, w, h);
+
+            // 1. Create Microscope Circle Mask
+            vCtx.save();
+            vCtx.beginPath();
+            vCtx.arc(cx, cy, w/2 - 5, 0, Math.PI*2);
+            vCtx.clip();
+
+            // Background Light
+            vCtx.fillStyle = "#fff";
+            vCtx.fillRect(0, 0, w, h);
+
+            // 2. TRANSFORMATIONS (The Physics)
+            vCtx.translate(cx, cy);
+
+            // A. INVERSION: Rotate 180 degrees
+            vCtx.rotate(Math.PI);
+
+            // B. MAGNIFICATION: Zoom in
+            const mag = 5; 
+            vCtx.scale(mag, mag);
+
+            // 3. Draw the Slide content
+            // We draw the slide at slideX, slideY just like the stage.
+            // But because we rotated the context 180deg above, 
+            // +X (Right) will appear as -X (Left).
+            
+            // Note: In the stage view, the Lens is fixed at center.
+            // If the slide moves +10px Right, the object is at +10.
+            // The lens (at 0) sees the object at +10 relative to center.
+            // So we just draw at slideX, slideY.
+            
+            // Draw Specimen "F"
+            vCtx.fillStyle = "rgba(200, 0, 0, 0.8)"; // Slightly transparent red
+            vCtx.font = "bold 24px Arial";
+            vCtx.textAlign = "center";
+            vCtx.textBaseline = "middle";
+            vCtx.fillText("F", slideX, slideY);
+
+            // Draw "UP" text to prove inversion
+            vCtx.fillStyle = "#333";
+            vCtx.font = "10px Arial";
+            vCtx.fillText("UP", slideX, slideY - 15);
+
+            // Draw some dust/texture on the slide (moves with slide)
+            vCtx.fillStyle = "rgba(0,0,0,0.1)";
+            vCtx.beginPath(); vCtx.arc(slideX+10, slideY+10, 2, 0, Math.PI*2); vCtx.fill();
+            vCtx.beginPath(); vCtx.arc(slideX-5, slideY-15, 1, 0, Math.PI*2); vCtx.fill();
+
+            vCtx.restore();
+
+            // 4. Draw Crosshair (Fixed in eyepiece)
+            vCtx.strokeStyle = "rgba(0,0,0,0.2)";
+            vCtx.lineWidth = 1;
+            vCtx.beginPath();
+            vCtx.moveTo(cx, 0); vCtx.lineTo(cx, h);
+            vCtx.moveTo(0, cy); vCtx.lineTo(w, cy);
+            vCtx.stroke();
+        }
+
+        function update() {
+            drawStage();
+            drawEyepiece();
+        }
+
+        // Movement Logic
+        function move(dx, dy) {
+            slideX += dx;
+            slideY += dy;
+
+            // Clamp limits so slide doesn't disappear
+            slideX = Math.max(-limits, Math.min(limits, slideX));
+            slideY = Math.max(-limits, Math.min(limits, slideY));
+
+            update();
+        }
+
+        // Button Listeners
+        // Note: Movement logic mimics "Pushing the slide".
+        // Pushing Right (+x) moves slide right.
+        document.getElementById('btnUp').onclick = () => move(0, -moveSpeed*2);
+        document.getElementById('btnDown').onclick = () => move(0, moveSpeed*2);
+        document.getElementById('btnLeft').onclick = () => move(-moveSpeed*2, 0);
+        document.getElementById('btnRight').onclick = () => move(moveSpeed*2, 0);
+
+        // Keyboard Listeners
+        window.addEventListener('keydown', (e) => {
+            if(e.key === 'ArrowUp') move(0, -moveSpeed);
+            if(e.key === 'ArrowDown') move(0, moveSpeed);
+            if(e.key === 'ArrowLeft') move(-moveSpeed, 0);
+            if(e.key === 'ArrowRight') move(moveSpeed, 0);
+        });
+
+        // Initialize
+        update();
+
+    </script>
+</body>
+</html>
