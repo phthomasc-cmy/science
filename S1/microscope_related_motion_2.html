@@ -83,26 +83,28 @@
 
     <h1>Microscope Slide Navigation</h1>
     <p class="subtitle">Drag the slide on the stage to find the specimen.</p>
+	<p class="subtitle">移動玻片，找出樣本。</p>
 
     <div class="container">
         
         <!-- LEFT: THE STAGE -->
         <div class="card">
-            <h3>1. The Stage (Real World)</h3>
+            <h3>1. The Stage 接物台 (Real World)</h3>
             <canvas id="stageCanvas" width="340" height="340"></canvas>
             <div class="instruction-box">
                 <strong>Action:</strong> Click and Drag the glass slide to move the letter "F" into the light beam.
+				 <strong>動作</strong> 移動玻片，把「Ｆ」移入光束中。
             </div>
         </div>
 
         <!-- RIGHT: THE VIEW -->
         <div class="card">
-            <h3>2. Through Eyepiece</h3>
+            <h3>2. Through Eyepiece 接目鏡</h3>
             <canvas id="viewCanvas" width="300" height="300"></canvas>
             <div class="instruction-box" style="background: #fff3e0; border-color: #ff9800; color: #ef6c00;">
                 <strong>Observation:</strong> <br>
-                1. The image is <span class="highlight">Inverted</span> (Upside down).<br>
-                2. Movement is <span class="highlight">Opposite</span> (Drag Left = Image moves Right).
+                1. The image is <span class="highlight">Inverted （倒置的）</span> (Upside down).<br>
+                2. Movement is <span class="highlight">Opposite (相反的) </span> (Drag Left = Image moves Right).
             </div>
         </div>
 
