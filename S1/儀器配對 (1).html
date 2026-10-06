@@ -1,0 +1,562 @@
+<!DOCTYPE html>
+<html lang="zh-Hant">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>🔥 實驗室儀器奇趣配對大作戰 🧪</title>
+  <style>
+    :root {
+      --bg-color: #f0f4fd;
+      --card-bg: #ffffff;
+      --primary: #5c67f2;
+      --accent: #ff4757;
+      --success: #2ed573;
+      --text: #2f3542;
+      --border: #ced6e0;
+    }
+
+    * {
+      box-sizing: border-box;
+      margin: 0;
+      padding: 0;
+      user-select: none;
+      font-family: 'PingFang TC', 'Microsoft JhengHei', '微軟正黑體', sans-serif;
+    }
+
+    body {
+      background-color: var(--bg-color);
+      color: var(--text);
+      min-height: 100vh;
+      display: flex;
+      flex-direction: column;
+      align-items: center;
+      padding: 20px 10px;
+    }
+
+    header {
+      text-align: center;
+      margin-bottom: 20px;
+    }
+
+    h1 {
+      font-size: 1.8rem;
+      color: #371b69;
+      margin-bottom: 6px;
+    }
+
+    .subtitle {
+      font-size: 0.95rem;
+      color: #57606f;
+    }
+
+    /* 關卡選單 */
+    .level-select {
+      display: flex;
+      gap: 10px;
+      margin-bottom: 15px;
+      flex-wrap: wrap;
+      justify-content: center;
+    }
+
+    .level-btn {
+      background: white;
+      border: 2px solid var(--primary);
+      padding: 8px 16px;
+      border-radius: 20px;
+      font-weight: bold;
+      cursor: pointer;
+      color: var(--primary);
+      transition: all 0.2s ease;
+    }
+
+    .level-btn.active, .level-btn:hover {
+      background: var(--primary);
+      color: white;
+      transform: translateY(-2px);
+      box-shadow: 0 4px 10px rgba(92, 103, 242, 0.3);
+    }
+
+    /* 計分與提示列 */
+    .dashboard {
+      display: flex;
+      gap: 20px;
+      margin-bottom: 15px;
+      font-size: 1.1rem;
+      font-weight: bold;
+      background: white;
+      padding: 10px 24px;
+      border-radius: 12px;
+      box-shadow: 0 2px 8px rgba(0,0,0,0.06);
+    }
+
+    .score-badge { color: #ffa502; }
+    .combo-badge { color: var(--accent); }
+
+    /* 遊戲主配對面板 */
+    .game-board {
+      display: flex;
+      justify-content: center;
+      gap: 20px;
+      width: 100%;
+      max-width: 900px;
+    }
+
+    .column {
+      flex: 1;
+      display: flex;
+      flex-direction: column;
+      gap: 12px;
+    }
+
+    .card {
+      background: var(--card-bg);
+      border: 2px solid var(--border);
+      border-radius: 12px;
+      padding: 14px;
+      cursor: pointer;
+      box-shadow: 0 4px 6px rgba(0,0,0,0.03);
+      transition: all 0.25s cubic-bezier(0.175, 0.885, 0.32, 1.275);
+      position: relative;
+      display: flex;
+      flex-direction: column;
+      justify-content: center;
+      min-height: 80px;
+    }
+
+    .card:hover {
+      border-color: var(--primary);
+      transform: translateY(-3px);
+    }
+
+    .card.selected {
+      border-color: #ff9f43;
+      background-color: #fffaf0;
+      transform: scale(1.03);
+      box-shadow: 0 0 14px rgba(255, 159, 67, 0.4);
+    }
+
+    .card.matched {
+      opacity: 0;
+      transform: scale(0.7);
+      pointer-events: none;
+      transition: all 0.4s ease;
+    }
+
+    .card.wrong {
+      animation: shake 0.4s ease;
+      background-color: #ffeaa7;
+      border-color: var(--accent);
+    }
+
+    /* 卡片內容樣式 */
+    .apparatus-name {
+      font-size: 1.2rem;
+      font-weight: 800;
+      color: #371b69;
+      display: flex;
+      align-items: center;
+      gap: 8px;
+    }
+
+    .quote {
+      font-size: 0.9rem;
+      color: #747d8c;
+      font-style: italic;
+      margin-top: 4px;
+    }
+
+    .official-func {
+      font-size: 0.95rem;
+      color: #2f3542;
+      font-weight: 600;
+      line-height: 1.4;
+    }
+
+    .funny-clue {
+      font-size: 0.85rem;
+      color: #ff6b81;
+      margin-top: 4px;
+    }
+
+    /* 抖動動畫 */
+    @keyframes shake {
+      0%, 100% { transform: translateX(0); }
+      20%, 60% { transform: translateX(-8px); }
+      40%, 80% { transform: translateX(8px); }
+    }
+
+    /* 彩帶畫布 */
+    #confetti-canvas {
+      position: fixed;
+      top: 0;
+      left: 0;
+      width: 100%;
+      height: 100%;
+      pointer-events: none;
+      z-index: 999;
+    }
+
+    /* 通關彈窗 */
+    .modal {
+      display: none;
+      position: fixed;
+      inset: 0;
+      background: rgba(0,0,0,0.5);
+      justify-content: center;
+      align-items: center;
+      z-index: 100;
+    }
+
+    .modal-content {
+      background: white;
+      padding: 30px;
+      border-radius: 20px;
+      text-align: center;
+      max-width: 400px;
+      box-shadow: 0 10px 25px rgba(0,0,0,0.2);
+      animation: popIn 0.3s ease;
+    }
+
+    @keyframes popIn {
+      from { transform: scale(0.7); opacity: 0; }
+      to { transform: scale(1); opacity: 1; }
+    }
+
+    .modal-content h2 {
+      color: #2ed573;
+      margin-bottom: 10px;
+      font-size: 1.8rem;
+    }
+
+    .modal-btn {
+      margin-top: 20px;
+      background: var(--primary);
+      color: white;
+      border: none;
+      padding: 10px 24px;
+      border-radius: 24px;
+      font-size: 1rem;
+      font-weight: bold;
+      cursor: pointer;
+    }
+
+    @media (max-width: 600px) {
+      .game-board {
+        flex-direction: column;
+      }
+      .card { min-height: 60px; padding: 10px; }
+      h1 { font-size: 1.4rem; }
+    }
+  </style>
+</head>
+<body>
+
+  <header>
+    <h1>🧪 實驗室儀器配對大作戰 🔥</h1>
+    <p class="subtitle">點擊左側【儀器】，再點擊右側【功能與搞笑自白】完成配對！</p>
+  </header>
+
+  <div class="level-select">
+    <button class="level-btn active" onclick="loadLevel(1)">關卡 1：盛載家族 (5題)</button>
+    <button class="level-btn" onclick="loadLevel(2)">關卡 2：玩火天團 (4題)</button>
+    <button class="level-btn" onclick="loadLevel(3)">關卡 3：神奇助手 (8題)</button>
+    <button class="level-btn" onclick="loadLevel('all')">👑 終極大混戰 (17題)</button>
+  </div>
+
+  <div class="dashboard">
+    <div>分數: <span id="score" class="score-badge">0</span></div>
+    <div>Combo: <span id="combo" class="combo-badge">x0</span></div>
+  </div>
+
+  <div class="game-board">
+    <!-- 左欄：儀器名稱 -->
+    <div class="column" id="left-column"></div>
+    <!-- 右欄：功能與搞笑描述 -->
+    <div class="column" id="right-column"></div>
+  </div>
+
+  <!-- 過關彈窗 -->
+  <div class="modal" id="win-modal">
+    <div class="modal-content">
+      <h2 id="modal-title">🎉 太厲害了！</h2>
+      <p id="modal-desc">你成功拯救了所有的實驗室儀器！</p>
+      <button class="modal-btn" onclick="closeModal()">再玩一次 / 下一關</button>
+    </div>
+  </div>
+
+  <canvas id="confetti-canvas"></canvas>
+
+  <script>
+    // 完整 17 個儀器數據庫 (依教材定義 + 趣味擬人描述)
+    const ITEMS_DB = [
+      // 盛載儀器
+      { id: 1, group: 1, name: "試管", icon: "🧪", quote: "「身材修長苗條，一口只能喝一丁點！」", func: "盛載液體或細小固體", clue: "身材最細長，裝不下太多東西。" },
+      { id: 2, group: 1, name: "大試管", icon: "🧫", quote: "「比普通試管胖一圈，胃口更豪邁！」", func: "盛載較大量的液體或固體", clue: "外觀就像長胖了的試管。" },
+      { id: 3, group: 1, name: "燒杯", icon: "🥛", quote: "「肚子圓圓，嘴角有個可愛的小尖嘴！」", func: "盛載液體或固體 (便於倒出)", clue: "圓筒身型、有倒液嘴的萬能玻璃杯。" },
+      { id: 4, group: 1, name: "錐形瓶", icon: "📐", quote: "「上窄下寬穿蓬蓬裙，劇烈搖晃液體也不會飛出來！」", func: "盛載液體或固體 (適合搖勻)", clue: "底部寬大三角錐狀，搖動不容易濺出。" },
+      { id: 5, group: 1, name: "試劑瓶", icon: "🧴", quote: "「頭上戴緊磨砂玻璃帽，藥水在裡面睡大覺！」", func: "儲存液體", clue: "自帶磨砂瓶塞，專門用來把液體收存保管。" },
+
+      // 加熱儀器
+      { id: 6, group: 2, name: "本生燈", icon: "🔥", quote: "「噴射藍色烈焰！實驗室裡最閃亮的火之巨星！」", func: "把物質加熱", clue: "接駁煤氣管，能噴火的主角。" },
+      { id: 7, group: 2, name: "隔熱墊", icon: "🛡️", quote: "「墊在最底層！用身體默默保護實驗桌不被燙焦！」", func: "保護實驗桌，避免實驗桌過熱", clue: "鋪在最底下的白色防火墊。" },
+      { id: 8, group: 2, name: "鐵絲網", icon: "🕸️", quote: "「中間有塊神秘白肚臍（陶土），能把熱量均勻散開！」", func: "加熱時承托儀器 (分散熱力)", clue: "金屬網織成，平放在三腳架上托著燒杯。" },
+      { id: 9, group: 2, name: "三腳架", icon: "🦵", quote: "「站姿穩如泰山！三個長腿專門把鐵絲網舉高高！」", func: "支撐鐵絲網", clue: "金屬三隻腳，架在本生燈上方。" },
+
+      // 其他常用輔助儀器
+      { id: 10, group: 3, name: "試管架", icon: "🪜", quote: "「試管們排排坐的大通舖，立正站好不准摔倒！」", func: "放置試管", clue: "有多個圓孔孔的架子，讓細長試管立著。" },
+      { id: 11, group: 3, name: "試管夾", icon: "🪵", quote: "「木頭製的溫柔大手，夾緊發燙的試管保護你的爪子！」", func: "夾住試管加熱", clue: "木製長柄小夾子，防止手被燙傷。" },
+      { id: 12, group: 3, name: "試管刷", icon: "🪥", quote: "「炸毛特工隊！鑽進深管裡把黑垢刷乾淨！」", func: "清洗試管", clue: "毛茸茸的長刷子，專門洗管子肚子。" },
+      { id: 13, group: 3, name: "玻璃棒", icon: "🪄", quote: "「像一根透明小魔杖，旋轉跳躍把液體攪勻！」", func: "攪拌液體", clue: "光滑透明的實心玻璃長條。" },
+      { id: 14, group: 3, name: "滴管", icon: "💧", quote: "「捏一捏黑腦袋，一滴、兩滴，下雨精準無比！」", func: "移取數滴液體", clue: "頂部有膠頭，精準吸取微量幾滴液體。" },
+      { id: 15, group: 3, name: "刮勺", icon: "🥄", quote: "「粉末界的迷你冰淇淋小鐵匙，挖取藥粉超俐落！」", func: "移取少量固體", clue: "金屬小扁匙，舀取粉末或小顆粒專用。" },
+      { id: 16, group: 3, name: "漏斗", icon: "🍦", quote: "「穿著濾紙裙子，液體咕嚕溜走，渣渣全留下來！」", func: "在過濾過程中承托濾紙，讓液體通過", clue: "像喇叭一樣的倒三角形，過濾好幫手。" },
+      { id: 17, group: 3, name: "架和夾", icon: "🦾", quote: "「實驗室的鋼鐵麒麟臂！把高難度儀器牢牢鎖在半空中！」", func: "固定儀器的位置", clue: "鐵架台配合金屬夾，自由調節高低角度。" }
+    ];
+
+    // 音效合成引擎 (Web Audio API)
+    const audioCtx = new (window.AudioContext || window.webkitAudioContext)();
+    
+    function playTone(freq, type, duration) {
+      if (audioCtx.state === 'suspended') audioCtx.resume();
+      const osc = audioCtx.createOscillator();
+      const gain = audioCtx.createGain();
+      osc.type = type;
+      osc.frequency.setValueAtTime(freq, audioCtx.currentTime);
+      gain.gain.setValueAtTime(0.15, audioCtx.currentTime);
+      gain.gain.exponentialRampToValueAtTime(0.01, audioCtx.currentTime + duration);
+      osc.connect(gain);
+      gain.connect(audioCtx.destination);
+      osc.start();
+      osc.stop(audioCtx.currentTime + duration);
+    }
+
+    const soundSuccess = () => {
+      playTone(523.25, 'sine', 0.15); // C5
+      setTimeout(() => playTone(659.25, 'sine', 0.25), 100); // E5
+      setTimeout(() => playTone(783.99, 'sine', 0.35), 200); // G5
+    };
+
+    const soundError = () => {
+      playTone(220, 'sawtooth', 0.2);
+      setTimeout(() => playTone(196, 'sawtooth', 0.3), 150);
+    };
+
+    // 狀態變量
+    let currentLevelData = [];
+    let selectedLeft = null;
+    let selectedRight = null;
+    let matchedCount = 0;
+    let score = 0;
+    let combo = 0;
+    let currentLevel = 1;
+
+    function shuffle(array) {
+      return array.slice().sort(() => Math.random() - 0.5);
+    }
+
+    function loadLevel(level) {
+      currentLevel = level;
+      document.querySelectorAll('.level-btn').forEach(btn => btn.classList.remove('active'));
+      const activeIdx = level === 'all' ? 3 : level - 1;
+      document.querySelectorAll('.level-btn')[activeIdx].classList.add('active');
+
+      if (level === 'all') {
+        currentLevelData = [...ITEMS_DB];
+      } else {
+        currentLevelData = ITEMS_DB.filter(item => item.group === level);
+      }
+
+      matchedCount = 0;
+      selectedLeft = null;
+      selectedRight = null;
+      renderBoard();
+    }
+
+    function renderBoard() {
+      const leftCol = document.getElementById('left-column');
+      const rightCol = document.getElementById('right-column');
+      leftCol.innerHTML = '';
+      rightCol.innerHTML = '';
+
+      // 左側打亂
+      const leftShuffled = shuffle(currentLevelData);
+      leftShuffled.forEach(item => {
+        const card = document.createElement('div');
+        card.className = 'card';
+        card.dataset.id = item.id;
+        card.innerHTML = `
+          <div class="apparatus-name">${item.icon} ${item.name}</div>
+          <div class="quote">${item.quote}</div>
+        `;
+        card.onclick = () => selectCard(card, 'left');
+        leftCol.appendChild(card);
+      });
+
+      // 右側打亂
+      const rightShuffled = shuffle(currentLevelData);
+      rightShuffled.forEach(item => {
+        const card = document.createElement('div');
+        card.className = 'card';
+        card.dataset.id = item.id;
+        card.innerHTML = `
+          <div class="official-func">🎯 功能：${item.func}</div>
+          <div class="funny-clue">💡 特徵線索：${item.clue}</div>
+        `;
+        card.onclick = () => selectCard(card, 'right');
+        rightCol.appendChild(card);
+      });
+    }
+
+    function selectCard(card, side) {
+      if (card.classList.contains('matched')) return;
+
+      if (side === 'left') {
+        if (selectedLeft) selectedLeft.classList.remove('selected');
+        selectedLeft = card;
+        selectedLeft.classList.add('selected');
+      } else {
+        if (selectedRight) selectedRight.classList.remove('selected');
+        selectedRight = card;
+        selectedRight.classList.add('selected');
+      }
+
+      // 當兩邊都選取時進行檢驗
+      if (selectedLeft && selectedRight) {
+        checkMatch();
+      }
+    }
+
+    function checkMatch() {
+      const leftId = selectedLeft.dataset.id;
+      const rightId = selectedRight.dataset.id;
+
+      if (leftId === rightId) {
+        // 配對正確！
+        soundSuccess();
+        combo++;
+        score += 100 + (combo * 20);
+        updateScoreBoard();
+
+        const l = selectedLeft;
+        const r = selectedRight;
+        l.classList.remove('selected');
+        r.classList.remove('selected');
+        l.classList.add('matched');
+        r.classList.add('matched');
+
+        matchedCount++;
+        selectedLeft = null;
+        selectedRight = null;
+
+        if (matchedCount === currentLevelData.length) {
+          setTimeout(levelComplete, 500);
+        }
+      } else {
+        // 配對錯誤！
+        soundError();
+        combo = 0;
+        updateScoreBoard();
+
+        const l = selectedLeft;
+        const r = selectedRight;
+        l.classList.add('wrong');
+        r.classList.add('wrong');
+
+        setTimeout(() => {
+          l.classList.remove('wrong', 'selected');
+          r.classList.remove('wrong', 'selected');
+          selectedLeft = null;
+          selectedRight = null;
+        }, 450);
+      }
+    }
+
+    function updateScoreBoard() {
+      document.getElementById('score').innerText = score;
+      document.getElementById('combo').innerText = `x${combo}`;
+    }
+
+    function levelComplete() {
+      startConfetti();
+      const modal = document.getElementById('win-modal');
+      const desc = document.getElementById('modal-desc');
+      
+      const praises = [
+        "你就是實驗室的大發明家！全部認得清清楚楚！🧪",
+        "本生燈都忍不住為你點火鼓掌！🔥",
+        "無懈可擊！科學老師看到這份成績單笑得合不攏嘴！💯"
+      ];
+      desc.innerText = praises[Math.floor(Math.random() * praises.length)] + ` (得分: ${score})`;
+      modal.style.display = 'flex';
+    }
+
+    function closeModal() {
+      document.getElementById('win-modal').style.display = 'none';
+      stopConfetti();
+      // 自動跳下一關
+      if (currentLevel === 1) loadLevel(2);
+      else if (currentLevel === 2) loadLevel(3);
+      else if (currentLevel === 3) loadLevel('all');
+      else loadLevel(1);
+    }
+
+    // --- 慶祝彩色碎紙屑效果 (Canvas Confetti) ---
+    const canvas = document.getElementById('confetti-canvas');
+    const ctx = canvas.getContext('2d');
+    let confettiParticles = [];
+    let confettiAnim = null;
+
+    function resizeCanvas() {
+      canvas.width = window.innerWidth;
+      canvas.height = window.innerHeight;
+    }
+    window.addEventListener('resize', resizeCanvas);
+    resizeCanvas();
+
+    function startConfetti() {
+      confettiParticles = [];
+      const colors = ['#ff4757', '#2ed573', '#1e90ff', '#ffa502', '#9b59b6'];
+      for (let i = 0; i < 100; i++) {
+        confettiParticles.push({
+          x: Math.random() * canvas.width,
+          y: Math.random() * -canvas.height,
+          size: Math.random() * 8 + 4,
+          color: colors[Math.floor(Math.random() * colors.length)],
+          vx: Math.random() * 4 - 2,
+          vy: Math.random() * 4 + 3,
+          rot: Math.random() * 360,
+          dRot: Math.random() * 8 - 4
+        });
+      }
+      renderConfetti();
+    }
+
+    function renderConfetti() {
+      ctx.clearRect(0, 0, canvas.width, canvas.height);
+      confettiParticles.forEach(p => {
+        p.x += p.vx;
+        p.y += p.vy;
+        p.rot += p.dRot;
+        ctx.save();
+        ctx.translate(p.x, p.y);
+        ctx.rotate((p.rot * Math.PI) / 180);
+        ctx.fillStyle = p.color;
+        ctx.fillRect(-p.size / 2, -p.size / 2, p.size, p.size);
+        ctx.restore();
+      });
+      confettiParticles = confettiParticles.filter(p => p.y < canvas.height + 20);
+      if (confettiParticles.length > 0) {
+        confettiAnim = requestAnimationFrame(renderConfetti);
+      }
+    }
+
+    function stopConfetti() {
+      if (confettiAnim) cancelAnimationFrame(confettiAnim);
+      ctx.clearRect(0, 0, canvas.width, canvas.height);
+    }
+
+    // 初始化載入第一關
+    loadLevel(1);
+  </script>
+</body>
+</html>
