@@ -4,179 +4,36 @@
   <meta charset="UTF-8">
   <meta name="viewport" content="width=device-width, initial-scale=1.0">
   <title>Heating Melting Ice - Lab Tracker</title>
-  <!-- Chart.js for real-time graphing -->
   <script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
   <style>
-    * {
-      box-sizing: border-box;
-      font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, sans-serif;
-    }
-    body {
-      background: #f4f7f9;
-      color: #333;
-      margin: 0;
-      padding: 20px;
-    }
-    .container {
-      max-width: 1200px;
-      margin: auto;
-      background: #fff;
-      border-radius: 12px;
-      padding: 25px;
-      box-shadow: 0 4px 15px rgba(0,0,0,0.06);
-    }
-    h1 {
-      margin-top: 0;
-      color: #0b5394;
-      text-align: center;
-    }
-    .top-panel {
-      display: flex;
-      flex-wrap: wrap;
-      gap: 15px;
-      align-items: center;
-      justify-content: space-between;
-      background: #eef3f8;
-      padding: 15px 20px;
-      border-radius: 8px;
-      margin-bottom: 20px;
-    }
-    .group-box {
-      display: flex;
-      align-items: center;
-      gap: 10px;
-    }
-    .group-box label {
-      font-weight: 700;
-    }
-    .group-box input {
-      padding: 8px 12px;
-      border: 1px solid #ccd1d9;
-      border-radius: 6px;
-      font-size: 1rem;
-      width: 180px;
-    }
-    .timer-box {
-      display: flex;
-      align-items: center;
-      gap: 10px;
-      flex-wrap: wrap;
-    }
-    .timer-display {
-      font-size: 2.2rem;
-      font-weight: 800;
-      background: #2c3e50;
-      color: #00e676;
-      padding: 4px 16px;
-      border-radius: 8px;
-      letter-spacing: 2px;
-      font-family: monospace;
-    }
-    .btn {
-      padding: 10px 18px;
-      border: none;
-      border-radius: 6px;
-      font-size: 0.95rem;
-      font-weight: 600;
-      cursor: pointer;
-      transition: background 0.2s, opacity 0.2s;
-    }
-    .btn:disabled {
-      opacity: 0.6;
-      cursor: not-allowed;
-    }
+    * { box-sizing: border-box; font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, sans-serif; }
+    body { background: #f4f7f9; color: #333; margin: 0; padding: 20px; }
+    .container { max-width: 1200px; margin: auto; background: #fff; border-radius: 12px; padding: 25px; box-shadow: 0 4px 15px rgba(0,0,0,0.06); }
+    h1 { margin-top: 0; color: #0b5394; text-align: center; }
+    .top-panel { display: flex; flex-wrap: wrap; gap: 15px; align-items: center; justify-content: space-between; background: #eef3f8; padding: 15px 20px; border-radius: 8px; margin-bottom: 20px; }
+    .group-box { display: flex; align-items: center; gap: 10px; }
+    .group-box label { font-weight: 700; }
+    .group-box input { padding: 8px 12px; border: 1px solid #ccd1d9; border-radius: 6px; font-size: 1rem; width: 180px; }
+    .timer-box { display: flex; align-items: center; gap: 10px; flex-wrap: wrap; }
+    .timer-display { font-size: 2.2rem; font-weight: 800; background: #2c3e50; color: #00e676; padding: 4px 16px; border-radius: 8px; letter-spacing: 2px; font-family: monospace; }
+    .btn { padding: 10px 18px; border: none; border-radius: 6px; font-size: 0.95rem; font-weight: 600; cursor: pointer; transition: background 0.2s; }
+    .btn:disabled { opacity: 0.6; cursor: not-allowed; }
     .btn-start { background: #007bff; color: white; }
-    .btn-start:hover:not(:disabled) { background: #0069d9; }
     .btn-reset { background: #6c757d; color: white; }
-    .btn-reset:hover:not(:disabled) { background: #5a6268; }
     .btn-export { background: #17a2b8; color: white; }
-    .btn-export:hover:not(:disabled) { background: #138496; }
-
-    /* Table Styling */
-    .table-wrapper {
-      width: 100%;
-      overflow-x: auto;
-      border: 1px solid #ddd;
-      border-radius: 8px;
-      margin-bottom: 25px;
-    }
-    table {
-      border-collapse: collapse;
-      width: 100%;
-      min-width: 950px;
-      text-align: center;
-    }
-    th, td {
-      border: 1px solid #e1e4e8;
-      padding: 8px 4px;
-      font-size: 0.9rem;
-    }
-    .row-header {
-      background: #f8f9fa;
-      font-weight: 700;
-      text-align: left;
-      padding-left: 12px;
-      white-space: nowrap;
-      position: sticky;
-      left: 0;
-      z-index: 2;
-      box-shadow: 2px 0 4px rgba(0,0,0,0.04);
-    }
-    .time-header {
-      background: #e9ecef;
-      font-weight: 700;
-      min-width: 58px;
-    }
-    .temp-input {
-      width: 100%;
-      max-width: 62px;
-      padding: 6px 2px;
-      text-align: center;
-      border: 1px solid #ced4da;
-      border-radius: 4px;
-      font-size: 0.95rem;
-    }
-    .temp-input:disabled {
-      background: #e9ecef;
-      color: #333;
-      font-weight: bold;
-    }
-    .btn-submit {
-      width: 100%;
-      padding: 6px 2px;
-      background: #28a745;
-      color: white;
-      border: none;
-      border-radius: 4px;
-      font-size: 0.8rem;
-      font-weight: 600;
-      cursor: pointer;
-    }
-    .btn-submit:hover:not(:disabled) {
-      background: #218838;
-    }
-    .btn-submit:disabled {
-      background: #b0bec5;
-      cursor: not-allowed;
-    }
-    .locked-badge {
-      background: #0b5394 !important;
-    }
-    .highlight-col {
-      background-color: #fff3cd !important;
-    }
-    .status-msg {
-      font-size: 0.85rem;
-      color: #666;
-      margin-top: 5px;
-      min-height: 20px;
-      text-align: right;
-    }
-    .chart-container {
-      position: relative;
-      height: 380px;
-      width: 100%;
-    }
+    .table-wrapper { width: 100%; overflow-x: auto; border: 1px solid #ddd; border-radius: 8px; margin-bottom: 25px; }
+    table { border-collapse: collapse; width: 100%; min-width: 950px; text-align: center; }
+    th, td { border: 1px solid #e1e4e8; padding: 8px 4px; font-size: 0.9rem; }
+    .row-header { background: #f8f9fa; font-weight: 700; text-align: left; padding-left: 12px; white-space: nowrap; position: sticky; left: 0; z-index: 2; }
+    .time-header { background: #e9ecef; font-weight: 700; min-width: 58px; }
+    .temp-input { width: 100%; max-width: 62px; padding: 6px 2px; text-align: center; border: 1px solid #ced4da; border-radius: 4px; font-size: 0.95rem; }
+    .temp-input:disabled { background: #e9ecef; color: #333; font-weight: bold; }
+    .btn-submit { width: 100%; padding: 6px 2px; background: #28a745; color: white; border: none; border-radius: 4px; font-size: 0.8rem; font-weight: 600; cursor: pointer; }
+    .btn-submit:disabled { background: #b0bec5; cursor: not-allowed; }
+    .locked-badge { background: #0b5394 !important; }
+    .highlight-col { background-color: #fff3cd !important; }
+    .status-msg { font-size: 0.85rem; color: #666; margin-top: 5px; min-height: 20px; text-align: right; }
+    .chart-container { position: relative; height: 380px; width: 100%; }
   </style>
 </head>
 <body>
@@ -184,13 +41,11 @@
 <div class="container">
   <h1>Heating Melting Ice: Temperature vs. Time</h1>
 
-  <!-- Control & Timer Bar -->
   <div class="top-panel">
     <div class="group-box">
       <label for="groupNumber">Group Number:</label>
-      <input type="text" id="groupNumber" placeholder="e.g. Group 2">
+      <input type="text" id="groupNumber" placeholder="e.g. Group 1">
     </div>
-
     <div class="timer-box">
       <div class="timer-display" id="timer">00:00</div>
       <button class="btn btn-start" id="startBtn" onclick="startExperiment()">Start Experiment</button>
@@ -199,67 +54,50 @@
     </div>
   </div>
 
-  <!-- 3-Row Experiment Record Table (0 - 15 min) -->
   <div class="table-wrapper">
     <table id="expTable">
-      <!-- Row 1: Time (0 to 15 min) -->
-      <tr id="timeRow">
-        <th class="row-header">Time (min)</th>
-      </tr>
-      <!-- Row 2: Temperature Input -->
-      <tr id="tempRow">
-        <th class="row-header">Temperature (°C)</th>
-      </tr>
-      <!-- Row 3: Submit & Lock Button -->
-      <tr id="actionRow">
-        <th class="row-header">Submit Action</th>
-      </tr>
+      <tr id="timeRow"><th class="row-header">Time (min)</th></tr>
+      <tr id="tempRow"><th class="row-header">Temperature (°C)</th></tr>
+      <tr id="actionRow"><th class="row-header">Submit Action</th></tr>
     </table>
   </div>
 
   <div id="syncStatus" class="status-msg"></div>
 
-  <!-- Real-Time Graph -->
   <div class="chart-container">
     <canvas id="tempChart"></canvas>
   </div>
 </div>
 
 <script>
-  // GOOGLE APPS SCRIPT WEB APP URL
   const GOOGLE_SCRIPT_URL = "https://script.google.com/macros/s/AKfycbxQamM5cKoiD6Y5602vuS6VVFj9VVxZYqwLO2wFWSWLfQrQCON7etJYGXEdAZQAWZ1L/exec";
 
   let startTime = null;
   let timerInterval = null;
   let chart = null;
 
-  // Build the 0-15 minute table dynamically
   const timeRow = document.getElementById('timeRow');
   const tempRow = document.getElementById('tempRow');
   const actionRow = document.getElementById('actionRow');
 
   for (let min = 0; min <= 15; min++) {
-    // Row 1: Time Headers
     const th = document.createElement('th');
     th.className = 'time-header';
     th.id = `col-head-${min}`;
     th.textContent = `${min}`;
     timeRow.appendChild(th);
 
-    // Row 2: Inputs
     const tdInput = document.createElement('td');
     tdInput.id = `col-input-${min}`;
     tdInput.innerHTML = `<input type="number" step="0.1" class="temp-input" id="temp-${min}" placeholder="°C" onkeydown="handleKeyPress(event, ${min})" disabled>`;
     tempRow.appendChild(tdInput);
 
-    // Row 3: Submit Buttons
     const tdAction = document.createElement('td');
     tdAction.id = `col-action-${min}`;
     tdAction.innerHTML = `<button class="btn-submit" id="btn-${min}" onclick="toggleSubmitReading(${min})" disabled>Submit</button>`;
     actionRow.appendChild(tdAction);
   }
 
-  // Initialize Chart.js
   const ctx = document.getElementById('tempChart').getContext('2d');
   chart = new Chart(ctx, {
     type: 'line',
@@ -273,7 +111,6 @@
         tension: 0.2,
         fill: true,
         pointRadius: 6,
-        pointHoverRadius: 8,
         spanGaps: true
       }]
     },
@@ -281,14 +118,8 @@
       responsive: true,
       maintainAspectRatio: false,
       scales: {
-        x: {
-          title: { display: true, text: 'Time (minutes)' }
-        },
-        y: {
-          title: { display: true, text: 'Temperature (°C)' },
-          suggestedMin: -5,
-          suggestedMax: 100
-        }
+        x: { title: { display: true, text: 'Time (minutes)' } },
+        y: { title: { display: true, text: 'Temperature (°C)' }, suggestedMin: -5, suggestedMax: 100 }
       }
     }
   });
@@ -305,13 +136,11 @@
     document.getElementById('startBtn').disabled = true;
     document.getElementById('groupNumber').disabled = true;
 
-    // Enable inputs and buttons
     for (let min = 0; min <= 15; min++) {
       document.getElementById(`temp-${min}`).disabled = false;
       document.getElementById(`btn-${min}`).disabled = false;
     }
 
-    // Run timer tick immediately, then set 1s interval
     updateTimer();
     timerInterval = setInterval(updateTimer, 1000);
   }
@@ -324,7 +153,6 @@
     document.getElementById('timer').textContent =
       String(minutes).padStart(2, '0') + ':' + String(seconds).padStart(2, '0');
 
-    // Visual helper: Highlight current minute column
     for (let i = 0; i <= 15; i++) {
       const isCurrent = (i === minutes);
       document.getElementById(`col-head-${i}`).classList.toggle('highlight-col', isCurrent);
@@ -334,17 +162,13 @@
   }
 
   function handleKeyPress(e, minute) {
-    if (e.key === 'Enter') {
-      toggleSubmitReading(minute);
-    }
+    if (e.key === 'Enter') toggleSubmitReading(minute);
   }
 
-  // Toggles between Submit/Lock and Edit
   async function toggleSubmitReading(minute) {
     const inputField = document.getElementById(`temp-${minute}`);
     const submitBtn = document.getElementById(`btn-${minute}`);
 
-    // If currently locked, switch to Edit mode
     if (inputField.disabled) {
       inputField.disabled = false;
       submitBtn.textContent = 'Save';
@@ -363,19 +187,16 @@
     const temperature = parseFloat(tempVal);
     const group = document.getElementById('groupNumber').value.trim();
 
-    // 1. Lock the input and button to prevent accidental edits
     inputField.disabled = true;
     submitBtn.textContent = '✓ Edit';
     submitBtn.classList.add('locked-badge');
 
-    // 2. Plot on Graph
     chart.data.datasets[0].data[minute] = temperature;
     chart.update();
 
-    // 3. Send to Google Sheets (Safe mode: text/plain to avoid CORS preflight rejection)
-    if (GOOGLE_SCRIPT_URL && !GOOGLE_SCRIPT_URL.includes("PASTE_YOUR_GOOGLE_APPS_SCRIPT")) {
+    if (GOOGLE_SCRIPT_URL) {
       const statusBox = document.getElementById('syncStatus');
-      statusBox.textContent = `Syncing Min ${minute} to Google Sheets...`;
+      statusBox.textContent = `Syncing Min ${minute} to Sheet...`;
       try {
         await fetch(GOOGLE_SCRIPT_URL, {
           method: 'POST',
@@ -388,10 +209,10 @@
             timestamp: new Date().toLocaleTimeString()
           })
         });
-        statusBox.textContent = `✓ Minute ${minute} synced successfully.`;
+        statusBox.textContent = `✓ Minute ${minute} (${temperature}°C) recorded in Sheet.`;
       } catch (err) {
-        console.error("Transmission error:", err);
-        statusBox.textContent = `⚠️ Network sync failed for Min ${minute}. Data remains safe in graph.`;
+        console.error(err);
+        statusBox.textContent = `⚠️ Network sync failed. Check internet connection.`;
       }
     }
   }
@@ -403,7 +224,6 @@
       const val = document.getElementById(`temp-${min}`).value;
       csv += `${min},${val !== '' ? val : ''}\n`;
     }
-
     const blob = new Blob([csv], { type: 'text/csv;charset=utf-8;' });
     const url = URL.createObjectURL(blob);
     const a = document.createElement('a');
@@ -414,34 +234,23 @@
   }
 
   function resetExperiment() {
-    if (!confirm('Are you sure you want to reset the experiment timer and all data?')) return;
-
+    if (!confirm('Are you sure you want to reset all data?')) return;
     clearInterval(timerInterval);
     startTime = null;
-
     document.getElementById('timer').textContent = '00:00';
     document.getElementById('startBtn').disabled = false;
     document.getElementById('groupNumber').disabled = false;
     document.getElementById('syncStatus').textContent = '';
 
-    // Reset table cells
     for (let min = 0; min <= 15; min++) {
       const input = document.getElementById(`temp-${min}`);
       const btn = document.getElementById(`btn-${min}`);
-
       input.value = '';
       input.disabled = true;
-
       btn.disabled = true;
       btn.textContent = 'Submit';
       btn.classList.remove('locked-badge');
-
-      document.getElementById(`col-head-${min}`).classList.remove('highlight-col');
-      document.getElementById(`col-input-${min}`).classList.remove('highlight-col');
-      document.getElementById(`col-action-${min}`).classList.remove('highlight-col');
     }
-
-    // Reset chart
     chart.data.datasets[0].data = Array(16).fill(null);
     chart.update();
   }
