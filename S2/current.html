@@ -1,0 +1,943 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <title>Series Circuit Simulator — 2 Cells & Light Bulb</title>
+  <style>
+    :root {
+      --bg: #0b1120;
+      --panel: #131c31;
+      --panel-border: #24324d;
+      --text: #e2e8f0;
+      --muted: #94a3b8;
+      --accent: #38bdf8;
+    }
+
+    * {
+      box-sizing: border-box;
+      margin: 0;
+      padding: 0;
+    }
+
+    body {
+      font-family: system-ui, -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, sans-serif;
+      background: radial-gradient(circle at top, #16223b 0%, var(--bg) 65%);
+      color: var(--text);
+      min-height: 100vh;
+      display: flex;
+      flex-direction: column;
+      align-items: center;
+      padding: 20px;
+    }
+
+    header {
+      width: 100%;
+      max-width: 840px;
+      display: flex;
+      flex-wrap: wrap;
+      justify-content: space-between;
+      align-items: center;
+      gap: 12px;
+      margin-bottom: 18px;
+      transition: max-width 0.25s ease;
+    }
+
+    body.settings-open header {
+      max-width: 1120px;
+    }
+
+    header h1 {
+      font-size: 1.35rem;
+      font-weight: 700;
+      letter-spacing: -0.02em;
+    }
+
+    header p {
+      color: var(--muted);
+      font-size: 0.88rem;
+      margin-top: 2px;
+    }
+
+    .header-actions {
+      display: flex;
+      align-items: center;
+      gap: 10px;
+    }
+
+    .status-badge {
+      display: inline-flex;
+      align-items: center;
+      gap: 8px;
+      padding: 6px 13px;
+      border-radius: 999px;
+      font-size: 0.82rem;
+      font-weight: 600;
+      background: rgba(34, 197, 94, 0.14);
+      color: #86efac;
+      border: 1px solid rgba(34, 197, 94, 0.35);
+      transition: all 0.2s ease;
+    }
+
+    .status-badge.open {
+      background: rgba(239, 68, 68, 0.14);
+      color: #fca5a5;
+      border-color: rgba(239, 68, 68, 0.35);
+    }
+
+    .status-dot {
+      width: 8px;
+      height: 8px;
+      border-radius: 50%;
+      background: currentColor;
+      box-shadow: 0 0 8px currentColor;
+    }
+
+    .settings-toggle {
+      background: var(--panel);
+      color: var(--text);
+      border: 1px solid var(--panel-border);
+      border-radius: 999px;
+      padding: 6px 14px;
+      font-size: 0.82rem;
+      font-weight: 600;
+      cursor: pointer;
+      transition: background 0.15s ease, border-color 0.15s ease;
+    }
+
+    .settings-toggle:hover {
+      background: #1b2844;
+      border-color: #3b4f75;
+    }
+
+    .workspace {
+      width: 100%;
+      max-width: 840px;
+      display: grid;
+      grid-template-columns: 1fr;
+      gap: 18px;
+      align-items: start;
+      transition: max-width 0.25s ease;
+    }
+
+    body.settings-open .workspace {
+      max-width: 1120px;
+      grid-template-columns: 1fr 330px;
+    }
+
+    @media (max-width: 920px) {
+      body.settings-open .workspace {
+        grid-template-columns: 1fr;
+      }
+    }
+
+    .canvas-card {
+      background: var(--panel);
+      border: 1px solid var(--panel-border);
+      border-radius: 16px;
+      padding: 14px;
+      box-shadow: 0 20px 45px rgba(0, 0, 0, 0.35);
+    }
+
+    canvas {
+      width: 100%;
+      height: auto;
+      display: block;
+      border-radius: 10px;
+      background: #0a101f;
+    }
+
+    .canvas-hint {
+      text-align: center;
+      font-size: 0.8rem;
+      color: var(--muted);
+      margin-top: 10px;
+    }
+
+    .controls-card {
+      display: none;
+      background: var(--panel);
+      border: 1px solid var(--panel-border);
+      border-radius: 16px;
+      padding: 18px;
+      flex-direction: column;
+      gap: 16px;
+      box-shadow: 0 20px 45px rgba(0, 0, 0, 0.35);
+    }
+
+    body.settings-open .controls-card {
+      display: flex;
+    }
+
+    .section-title {
+      font-size: 0.75rem;
+      text-transform: uppercase;
+      letter-spacing: 0.08em;
+      color: var(--muted);
+      font-weight: 700;
+      margin-bottom: 8px;
+    }
+
+    .btn-primary {
+      width: 100%;
+      padding: 11px 14px;
+      border-radius: 10px;
+      border: 1px solid rgba(56, 189, 248, 0.4);
+      background: linear-gradient(135deg, #0284c7, #0369a1);
+      color: white;
+      font-weight: 600;
+      font-size: 0.95rem;
+      cursor: pointer;
+      transition: transform 0.1s ease, filter 0.2s ease;
+    }
+
+    .btn-primary:hover {
+      filter: brightness(1.1);
+    }
+
+    .btn-primary:active {
+      transform: scale(0.985);
+    }
+
+    .btn-primary.open-state {
+      background: linear-gradient(135deg, #16a34a, #15803d);
+      border-color: rgba(74, 222, 128, 0.4);
+    }
+
+    .control-group {
+      background: #0d1527;
+      border: 1px solid var(--panel-border);
+      border-radius: 12px;
+      padding: 12px;
+      display: flex;
+      flex-direction: column;
+      gap: 10px;
+    }
+
+    .row-between {
+      display: flex;
+      justify-content: space-between;
+      align-items: center;
+      font-size: 0.86rem;
+    }
+
+    .val-tag {
+      font-variant-numeric: tabular-nums;
+      font-weight: 700;
+      color: var(--accent);
+    }
+
+    input[type="range"] {
+      width: 100%;
+      accent-color: var(--accent);
+      cursor: pointer;
+    }
+
+    .mini-btn {
+      background: #1e293b;
+      color: var(--text);
+      border: 1px solid #334155;
+      border-radius: 6px;
+      padding: 4px 8px;
+      font-size: 0.75rem;
+      font-weight: 600;
+      cursor: pointer;
+    }
+
+    .mini-btn:hover {
+      background: #2b3952;
+    }
+
+    .readouts {
+      display: grid;
+      grid-template-columns: repeat(2, 1fr);
+      gap: 8px;
+    }
+
+    .readout-box {
+      background: #0b1222;
+      border: 1px solid var(--panel-border);
+      border-radius: 10px;
+      padding: 10px;
+    }
+
+    .readout-label {
+      font-size: 0.72rem;
+      color: var(--muted);
+      margin-bottom: 3px;
+    }
+
+    .readout-value {
+      font-size: 1.05rem;
+      font-weight: 700;
+      font-variant-numeric: tabular-nums;
+    }
+
+    .btn-reset {
+      background: transparent;
+      border: 1px solid var(--panel-border);
+      color: var(--muted);
+      border-radius: 8px;
+      padding: 8px;
+      font-size: 0.82rem;
+      font-weight: 600;
+      cursor: pointer;
+    }
+
+    .btn-reset:hover {
+      color: var(--text);
+      border-color: #475569;
+    }
+  </style>
+</head>
+<body>
+  <header>
+    <div>
+      <h1>Series Circuit Simulator</h1>
+      <p>2 Cells in Series & Light Bulb • Conventional Current</p>
+    </div>
+    <div class="header-actions">
+      <div id="statusBadge" class="status-badge">
+        <span class="status-dot"></span>
+        <span id="statusText">Closed Circuit</span>
+      </div>
+      <button id="settingsToggleBtn" class="settings-toggle" aria-expanded="false">⚙ Settings</button>
+    </div>
+  </header>
+
+  <main class="workspace">
+    <section class="canvas-card">
+      <canvas id="circuitCanvas" width="760" height="460"></canvas>
+      <div class="canvas-hint">Click the switch on the right wire to open or close the circuit.</div>
+    </section>
+
+    <aside class="controls-card" aria-label="Circuit Settings">
+      <div>
+        <div class="section-title">Circuit Switch</div>
+        <button id="switchBtn" class="btn-primary">Open Switch</button>
+      </div>
+
+      <div class="control-group">
+        <div class="section-title" style="margin-bottom: 0;">Power Supply (2 Cells in Series)</div>
+
+        <div>
+          <div class="row-between">
+            <span>Cell 1 Voltage</span>
+            <span>
+              <span id="v1Label" class="val-tag">+1.5 V</span>
+              <button id="flip1Btn" class="mini-btn" title="Reverse Cell 1 polarity">Flip +/−</button>
+            </span>
+          </div>
+          <input id="v1Slider" type="range" min="0" max="3" step="0.5" value="1.5" />
+        </div>
+
+        <div>
+          <div class="row-between">
+            <span>Cell 2 Voltage</span>
+            <span>
+              <span id="v2Label" class="val-tag">+1.5 V</span>
+              <button id="flip2Btn" class="mini-btn" title="Reverse Cell 2 polarity">Flip +/−</button>
+            </span>
+          </div>
+          <input id="v2Slider" type="range" min="0" max="3" step="0.5" value="1.5" />
+        </div>
+      </div>
+
+      <div class="control-group">
+        <div class="row-between">
+          <span>Light Bulb Resistance</span>
+          <span id="rLabel" class="val-tag">10 Ω</span>
+        </div>
+        <input id="rSlider" type="range" min="5" max="30" step="1" value="10" />
+      </div>
+
+      <div>
+        <div class="section-title">Live Measurements</div>
+        <div class="readouts">
+          <div class="readout-box">
+            <div class="readout-label">Total Voltage (V)</div>
+            <div id="totalVOut" class="readout-value" style="color: #38bdf8;">3.0 V</div>
+          </div>
+          <div class="readout-box">
+            <div class="readout-label">Current (I = V / R)</div>
+            <div id="currentOut" class="readout-value" style="color: #4ade80;">0.30 A</div>
+          </div>
+          <div class="readout-box">
+            <div class="readout-label">Bulb Power (P = V·I)</div>
+            <div id="powerOut" class="readout-value" style="color: #fbbf24;">0.90 W</div>
+          </div>
+          <div class="readout-box">
+            <div class="readout-label">Flow Direction</div>
+            <div id="dirOut" class="readout-value" style="font-size: 0.92rem;">Clockwise ↻</div>
+          </div>
+        </div>
+      </div>
+
+      <button id="resetBtn" class="btn-reset">Reset to Default (2 × 1.5V)</button>
+    </aside>
+  </main>
+
+  <script>
+    const canvas = document.getElementById('circuitCanvas');
+    const ctx = canvas.getContext('2d');
+
+    const W = 760;
+    const H = 460;
+
+    function resizeForDPR() {
+      const dpr = window.devicePixelRatio || 1;
+      canvas.width = W * dpr;
+      canvas.height = H * dpr;
+      ctx.setTransform(dpr, 0, 0, dpr, 0, 0);
+    }
+    resizeForDPR();
+    window.addEventListener('resize', resizeForDPR);
+
+    // Simulation state (Conventional current only)
+    const state = {
+      isClosed: true,
+      v1: 1.5,
+      p1: 1, // +1 means + on LEFT, - on RIGHT; -1 means reversed
+      v2: 1.5,
+      p2: 1,
+      resistance: 10,
+      offset: 0,
+      currentVelocity: 0,
+      switchAngle: 0,
+      switchHover: false
+    };
+
+    // Circuit Loop Geometry (clockwise path)
+    const X_LEFT = 120;
+    const X_RIGHT = 640;
+    const Y_TOP = 125;
+    const Y_BOT = 355;
+    const R_CORNER = 24;
+
+    const BULB_X = 380;
+    const SWITCH_Y_TOP = 195;
+    const SWITCH_Y_BOT = 275;
+
+    const segments = [
+      { type: 'line', x1: X_LEFT + R_CORNER, y1: Y_TOP, x2: BULB_X - 24, y2: Y_TOP },
+      { type: 'line', x1: BULB_X - 24, y1: Y_TOP, x2: BULB_X - 14, y2: 78 },
+      { type: 'line', x1: BULB_X - 14, y1: 78, x2: BULB_X + 14, y2: 78 },
+      { type: 'line', x1: BULB_X + 14, y1: 78, x2: BULB_X + 24, y2: Y_TOP },
+      { type: 'line', x1: BULB_X + 24, y1: Y_TOP, x2: X_RIGHT - R_CORNER, y2: Y_TOP },
+      { type: 'arc', cx: X_RIGHT - R_CORNER, cy: Y_TOP + R_CORNER, r: R_CORNER, a1: -Math.PI / 2, a2: 0 },
+      { type: 'line', x1: X_RIGHT, y1: Y_TOP + R_CORNER, x2: X_RIGHT, y2: SWITCH_Y_TOP },
+      { type: 'line', x1: X_RIGHT, y1: SWITCH_Y_TOP, x2: X_RIGHT, y2: SWITCH_Y_BOT, isSwitch: true },
+      { type: 'line', x1: X_RIGHT, y1: SWITCH_Y_BOT, x2: X_RIGHT, y2: Y_BOT - R_CORNER },
+      { type: 'arc', cx: X_RIGHT - R_CORNER, cy: Y_BOT - R_CORNER, r: R_CORNER, a1: 0, a2: Math.PI / 2 },
+      { type: 'line', x1: X_RIGHT - R_CORNER, y1: Y_BOT, x2: X_LEFT + R_CORNER, y2: Y_BOT },
+      { type: 'arc', cx: X_LEFT + R_CORNER, cy: Y_BOT - R_CORNER, r: R_CORNER, a1: Math.PI / 2, a2: Math.PI },
+      { type: 'line', x1: X_LEFT, y1: Y_BOT - R_CORNER, x2: X_LEFT, y2: Y_TOP + R_CORNER },
+      { type: 'arc', cx: X_LEFT + R_CORNER, cy: Y_TOP + R_CORNER, r: R_CORNER, a1: Math.PI, a2: Math.PI * 1.5 }
+    ];
+
+    let totalLength = 0;
+    for (const seg of segments) {
+      if (seg.type === 'line') {
+        seg.len = Math.hypot(seg.x2 - seg.x1, seg.y2 - seg.y1);
+      } else {
+        seg.len = Math.abs(seg.a2 - seg.a1) * seg.r;
+      }
+      seg.startDist = totalLength;
+      totalLength += seg.len;
+      seg.endDist = totalLength;
+    }
+
+    function getPointOnPath(dist, currentSwitchAngle) {
+      const d = ((dist % totalLength) + totalLength) % totalLength;
+      for (const seg of segments) {
+        if (d <= seg.endDist) {
+          const t = (d - seg.startDist) / seg.len;
+          if (seg.type === 'line') {
+            let x = seg.x1 + (seg.x2 - seg.x1) * t;
+            let y = seg.y1 + (seg.y2 - seg.y1) * t;
+
+            if (seg.isSwitch && currentSwitchAngle > 0.001) {
+              const dy = y - SWITCH_Y_BOT;
+              const cos = Math.cos(currentSwitchAngle);
+              const sin = Math.sin(currentSwitchAngle);
+              x = X_RIGHT - dy * sin;
+              y = SWITCH_Y_BOT + dy * cos;
+            }
+            return { x, y };
+          } else {
+            const a = seg.a1 + (seg.a2 - seg.a1) * t;
+            return {
+              x: seg.cx + Math.cos(a) * seg.r,
+              y: seg.cy + Math.sin(a) * seg.r
+            };
+          }
+        }
+      }
+      return { x: X_LEFT + R_CORNER, y: Y_TOP };
+    }
+
+    function getPhysics() {
+      const signedV1 = state.v1 * state.p1;
+      const signedV2 = state.v2 * state.p2;
+      const totalV = signedV1 + signedV2;
+      const current = state.isClosed ? totalV / state.resistance : 0;
+      const power = state.isClosed ? current * current * state.resistance : 0;
+      return { signedV1, signedV2, totalV, current, power };
+    }
+
+    // UI Elements
+    const settingsToggleBtn = document.getElementById('settingsToggleBtn');
+    const switchBtn = document.getElementById('switchBtn');
+    const statusBadge = document.getElementById('statusBadge');
+    const statusText = document.getElementById('statusText');
+    const v1Slider = document.getElementById('v1Slider');
+    const v2Slider = document.getElementById('v2Slider');
+    const rSlider = document.getElementById('rSlider');
+    const v1Label = document.getElementById('v1Label');
+    const v2Label = document.getElementById('v2Label');
+    const rLabel = document.getElementById('rLabel');
+    const flip1Btn = document.getElementById('flip1Btn');
+    const flip2Btn = document.getElementById('flip2Btn');
+    const totalVOut = document.getElementById('totalVOut');
+    const currentOut = document.getElementById('currentOut');
+    const powerOut = document.getElementById('powerOut');
+    const dirOut = document.getElementById('dirOut');
+    const resetBtn = document.getElementById('resetBtn');
+
+    settingsToggleBtn.addEventListener('click', () => {
+      const isOpen = document.body.classList.toggle('settings-open');
+      settingsToggleBtn.textContent = isOpen ? '✕ Hide Settings' : '⚙ Settings';
+      settingsToggleBtn.setAttribute('aria-expanded', String(isOpen));
+    });
+
+    function updateUI() {
+      const { signedV1, signedV2, totalV, current, power } = getPhysics();
+
+      switchBtn.textContent = state.isClosed ? 'Open Switch' : 'Close Switch';
+      switchBtn.classList.toggle('open-state', !state.isClosed);
+
+      statusBadge.classList.toggle('open', !state.isClosed);
+      statusText.textContent = state.isClosed
+        ? Math.abs(current) > 0.001
+          ? 'Closed Circuit'
+          : 'Closed Circuit (0 A)'
+        : 'Open Circuit';
+
+      v1Label.textContent = `${signedV1 >= 0 ? '+' : ''}${signedV1.toFixed(1)} V`;
+      v2Label.textContent = `${signedV2 >= 0 ? '+' : ''}${signedV2.toFixed(1)} V`;
+      rLabel.textContent = `${state.resistance} Ω`;
+
+      totalVOut.textContent = `${Math.abs(totalV).toFixed(1)} V`;
+      currentOut.textContent = `${Math.abs(current).toFixed(2)} A`;
+      powerOut.textContent = `${power.toFixed(2)} W`;
+
+      if (!state.isClosed || Math.abs(current) < 0.001) {
+        dirOut.textContent = 'None (0 A)';
+      } else {
+        dirOut.textContent = current > 0 ? 'Clockwise ↻' : 'Counter-CW ↺';
+      }
+    }
+
+    function toggleSwitch() {
+      state.isClosed = !state.isClosed;
+      updateUI();
+    }
+
+    switchBtn.addEventListener('click', toggleSwitch);
+
+    v1Slider.addEventListener('input', (e) => {
+      state.v1 = parseFloat(e.target.value);
+      updateUI();
+    });
+
+    v2Slider.addEventListener('input', (e) => {
+      state.v2 = parseFloat(e.target.value);
+      updateUI();
+    });
+
+    rSlider.addEventListener('input', (e) => {
+      state.resistance = parseInt(e.target.value, 10);
+      updateUI();
+    });
+
+    flip1Btn.addEventListener('click', () => {
+      state.p1 *= -1;
+      updateUI();
+    });
+
+    flip2Btn.addEventListener('click', () => {
+      state.p2 *= -1;
+      updateUI();
+    });
+
+    resetBtn.addEventListener('click', () => {
+      state.isClosed = true;
+      state.v1 = 1.5;
+      state.p1 = 1;
+      state.v2 = 1.5;
+      state.p2 = 1;
+      state.resistance = 10;
+      v1Slider.value = '1.5';
+      v2Slider.value = '1.5';
+      rSlider.value = '10';
+      updateUI();
+    });
+
+    function getCanvasCoords(e) {
+      const rect = canvas.getBoundingClientRect();
+      return {
+        x: ((e.clientX - rect.left) / rect.width) * W,
+        y: ((e.clientY - rect.top) / rect.height) * H
+      };
+    }
+
+    function isInsideSwitchHitbox(x, y) {
+      return x >= 595 && x <= 695 && y >= 175 && y <= 295;
+    }
+
+    canvas.addEventListener('mousemove', (e) => {
+      const { x, y } = getCanvasCoords(e);
+      state.switchHover = isInsideSwitchHitbox(x, y);
+      canvas.style.cursor = state.switchHover ? 'pointer' : 'default';
+    });
+
+    canvas.addEventListener('click', (e) => {
+      const { x, y } = getCanvasCoords(e);
+      if (isInsideSwitchHitbox(x, y)) {
+        toggleSwitch();
+      }
+    });
+
+    // Drawing functions
+    function drawGrid() {
+      ctx.save();
+      ctx.strokeStyle = 'rgba(148, 163, 184, 0.05)';
+      ctx.lineWidth = 1;
+      for (let x = 20; x < W; x += 25) {
+        ctx.beginPath();
+        ctx.moveTo(x, 0);
+        ctx.lineTo(x, H);
+        ctx.stroke();
+      }
+      for (let y = 20; y < H; y += 25) {
+        ctx.beginPath();
+        ctx.moveTo(0, y);
+        ctx.lineTo(W, y);
+        ctx.stroke();
+      }
+      ctx.restore();
+    }
+
+    function drawWires() {
+      ctx.save();
+      ctx.lineCap = 'round';
+      ctx.lineJoin = 'round';
+
+      function traceLoopWithoutSwitch() {
+        ctx.beginPath();
+        ctx.moveTo(X_LEFT + R_CORNER, Y_TOP);
+        ctx.lineTo(BULB_X - 24, Y_TOP);
+        ctx.moveTo(BULB_X + 24, Y_TOP);
+        ctx.lineTo(X_RIGHT - R_CORNER, Y_TOP);
+        ctx.arc(X_RIGHT - R_CORNER, Y_TOP + R_CORNER, R_CORNER, -Math.PI / 2, 0);
+        ctx.lineTo(X_RIGHT, SWITCH_Y_TOP);
+
+        ctx.moveTo(X_RIGHT, SWITCH_Y_BOT);
+        ctx.lineTo(X_RIGHT, Y_BOT - R_CORNER);
+        ctx.arc(X_RIGHT - R_CORNER, Y_BOT - R_CORNER, R_CORNER, 0, Math.PI / 2);
+        ctx.lineTo(X_LEFT + R_CORNER, Y_BOT);
+        ctx.arc(X_LEFT + R_CORNER, Y_BOT - R_CORNER, R_CORNER, Math.PI / 2, Math.PI);
+        ctx.lineTo(X_LEFT, Y_TOP + R_CORNER);
+        ctx.arc(X_LEFT + R_CORNER, Y_TOP + R_CORNER, R_CORNER, Math.PI, Math.PI * 1.5);
+      }
+
+      traceLoopWithoutSwitch();
+      ctx.strokeStyle = '#1e293b';
+      ctx.lineWidth = 12;
+      ctx.stroke();
+
+      traceLoopWithoutSwitch();
+      ctx.strokeStyle = '#92400e';
+      ctx.lineWidth = 5;
+      ctx.stroke();
+
+      ctx.restore();
+    }
+
+    function drawSwitch() {
+      ctx.save();
+
+      if (state.switchHover) {
+        ctx.fillStyle = 'rgba(56, 189, 248, 0.08)';
+        ctx.beginPath();
+        ctx.roundRect(604, 180, 88, 110, 12);
+        ctx.fill();
+      }
+
+      const bladeLen = SWITCH_Y_BOT - SWITCH_Y_TOP;
+      const tipX = X_RIGHT + Math.sin(state.switchAngle) * bladeLen;
+      const tipY = SWITCH_Y_BOT - Math.cos(state.switchAngle) * bladeLen;
+
+      ctx.lineCap = 'round';
+      ctx.beginPath();
+      ctx.moveTo(X_RIGHT, SWITCH_Y_BOT);
+      ctx.lineTo(tipX, tipY);
+      ctx.strokeStyle = '#1e293b';
+      ctx.lineWidth = 10;
+      ctx.stroke();
+
+      ctx.beginPath();
+      ctx.moveTo(X_RIGHT, SWITCH_Y_BOT);
+      ctx.lineTo(tipX, tipY);
+      ctx.strokeStyle = state.isClosed ? '#fbbf24' : '#94a3b8';
+      ctx.lineWidth = 5;
+      ctx.stroke();
+
+      ctx.fillStyle = state.isClosed ? '#22c55e' : '#ef4444';
+      ctx.beginPath();
+      ctx.arc(tipX, tipY, 5.5, 0, Math.PI * 2);
+      ctx.fill();
+
+      for (const y of [SWITCH_Y_TOP, SWITCH_Y_BOT]) {
+        ctx.fillStyle = '#e2e8f0';
+        ctx.beginPath();
+        ctx.arc(X_RIGHT, y, 6, 0, Math.PI * 2);
+        ctx.fill();
+        ctx.strokeStyle = '#475569';
+        ctx.lineWidth = 2;
+        ctx.stroke();
+      }
+
+      ctx.fillStyle = '#cbd5e1';
+      ctx.font = '600 13px system-ui, sans-serif';
+      ctx.textAlign = 'left';
+      ctx.fillText('Switch', X_RIGHT + 20, 232);
+      ctx.fillStyle = state.isClosed ? '#4ade80' : '#f87171';
+      ctx.font = '700 12px system-ui, sans-serif';
+      ctx.fillText(state.isClosed ? 'CLOSED' : 'OPEN', X_RIGHT + 20, 249);
+
+      ctx.restore();
+    }
+
+    function drawCell(cx, cy, voltage, polarity, label) {
+      ctx.save();
+      const bodyW = 106;
+      const bodyH = 44;
+      const leftX = cx - bodyW / 2;
+      const rightX = cx + bodyW / 2;
+      const topY = cy - bodyH / 2;
+      const plusOnLeft = polarity === 1;
+
+      ctx.fillStyle = '#f59e0b';
+      if (plusOnLeft) {
+        ctx.fillRect(leftX - 7, cy - 10, 8, 20);
+      } else {
+        ctx.fillRect(rightX - 1, cy - 10, 8, 20);
+      }
+
+      ctx.fillStyle = '#94a3b8';
+      if (plusOnLeft) {
+        ctx.fillRect(rightX - 3, cy - 13, 5, 26);
+      } else {
+        ctx.fillRect(leftX - 2, cy - 13, 5, 26);
+      }
+
+      const grad = ctx.createLinearGradient(leftX, 0, rightX, 0);
+      if (plusOnLeft) {
+        grad.addColorStop(0, 'rgba(217, 119, 6, 0.35)');
+        grad.addColorStop(0.32, 'rgba(217, 119, 6, 0.35)');
+        grad.addColorStop(0.321, 'rgba(30, 41, 59, 0.62)');
+        grad.addColorStop(1, 'rgba(30, 41, 59, 0.62)');
+      } else {
+        grad.addColorStop(0, 'rgba(30, 41, 59, 0.62)');
+        grad.addColorStop(0.68, 'rgba(30, 41, 59, 0.62)');
+        grad.addColorStop(0.681, 'rgba(217, 119, 6, 0.35)');
+        grad.addColorStop(1, 'rgba(217, 119, 6, 0.35)');
+      }
+
+      ctx.fillStyle = grad;
+      ctx.beginPath();
+      ctx.roundRect(leftX, topY, bodyW, bodyH, 7);
+      ctx.fill();
+
+      ctx.strokeStyle = 'rgba(226, 232, 240, 0.35)';
+      ctx.lineWidth = 2;
+      ctx.stroke();
+
+      ctx.font = '800 16px system-ui, sans-serif';
+      ctx.textAlign = 'center';
+      ctx.textBaseline = 'middle';
+
+      ctx.fillStyle = '#fbbf24';
+      ctx.fillText('+', plusOnLeft ? leftX + 16 : rightX - 16, cy);
+
+      ctx.fillStyle = '#cbd5e1';
+      ctx.fillText('−', plusOnLeft ? rightX - 16 : leftX + 16, cy);
+
+      ctx.fillStyle = '#e2e8f0';
+      ctx.font = '600 13px system-ui, sans-serif';
+      ctx.fillText(`${label} (${voltage.toFixed(1)} V)`, cx, cy + 40);
+
+      ctx.restore();
+    }
+
+    function drawBulb(power) {
+      ctx.save();
+      const bx = BULB_X;
+      const by = 76;
+      const bulbR = 38;
+      const brightness = power > 0.001 ? Math.min(1, Math.pow(power / 1.8, 0.6)) : 0;
+
+      if (brightness > 0.01) {
+        const haloR = 55 + brightness * 125;
+        const halo = ctx.createRadialGradient(bx, by, 6, bx, by, haloR);
+        halo.addColorStop(0, `rgba(255, 244, 180, ${0.72 * brightness})`);
+        halo.addColorStop(0.35, `rgba(251, 191, 36, ${0.42 * brightness})`);
+        halo.addColorStop(1, 'rgba(251, 191, 36, 0)');
+        ctx.fillStyle = halo;
+        ctx.beginPath();
+        ctx.arc(bx, by, haloR, 0, Math.PI * 2);
+        ctx.fill();
+      }
+
+      const glassGrad = ctx.createRadialGradient(bx - 10, by - 12, 4, bx, by, bulbR);
+      glassGrad.addColorStop(0, `rgba(255, 250, 220, ${0.14 + 0.5 * brightness})`);
+      glassGrad.addColorStop(1, `rgba(148, 163, 184, ${0.12 + 0.12 * brightness})`);
+
+      ctx.fillStyle = glassGrad;
+      ctx.beginPath();
+      ctx.arc(bx, by, bulbR, 0, Math.PI * 2);
+      ctx.fill();
+
+      ctx.strokeStyle = 'rgba(226, 232, 240, 0.45)';
+      ctx.lineWidth = 2;
+      ctx.stroke();
+
+      ctx.fillStyle = '#64748b';
+      ctx.beginPath();
+      ctx.roundRect(bx - 26, 108, 52, 22, 5);
+      ctx.fill();
+      ctx.strokeStyle = '#94a3b8';
+      ctx.lineWidth = 1.5;
+      ctx.stroke();
+
+      ctx.strokeStyle = '#94a3b8';
+      ctx.lineWidth = 2.5;
+      ctx.beginPath();
+      ctx.moveTo(bx - 24, Y_TOP);
+      ctx.lineTo(bx - 14, 78);
+      ctx.moveTo(bx + 24, Y_TOP);
+      ctx.lineTo(bx + 14, 78);
+      ctx.stroke();
+
+      ctx.save();
+      if (brightness > 0.01) {
+        ctx.shadowColor = `rgba(253, 224, 71, ${brightness})`;
+        ctx.shadowBlur = 10 + brightness * 24;
+      }
+      ctx.beginPath();
+      ctx.moveTo(bx - 14, 78);
+      const coils = 5;
+      for (let i = 0; i <= coils; i++) {
+        const px = bx - 14 + (28 * i) / coils;
+        const py = i % 2 === 0 ? 78 : 67;
+        ctx.lineTo(px, py);
+      }
+      const r = Math.round(120 + 135 * Math.min(1, brightness * 1.4));
+      const g = Math.round(115 + 135 * brightness);
+      const b = Math.round(110 + 100 * Math.max(0, brightness - 0.35) * 1.5);
+      ctx.strokeStyle = `rgb(${r}, ${g}, ${b})`;
+      ctx.lineWidth = 3;
+      ctx.stroke();
+      ctx.restore();
+
+      ctx.fillStyle = '#e2e8f0';
+      ctx.font = '600 13px system-ui, sans-serif';
+      ctx.textAlign = 'center';
+      ctx.fillText('Light Bulb', bx, 26);
+
+      ctx.restore();
+    }
+
+    function drawCharges() {
+      const NUM_CHARGES = 32;
+      const spacing = totalLength / NUM_CHARGES;
+
+      for (let i = 0; i < NUM_CHARGES; i++) {
+        const d = state.offset + i * spacing;
+        const { x, y } = getPointOnPath(d, state.switchAngle);
+
+        ctx.save();
+
+        // Soft outer glow
+        ctx.fillStyle = 'rgba(56, 189, 248, 0.25)';
+        ctx.beginPath();
+        ctx.arc(x, y, 9.5, 0, Math.PI * 2);
+        ctx.fill();
+
+        // Plain charge sphere (no + or - sign)
+        ctx.fillStyle = '#38bdf8';
+        ctx.beginPath();
+        ctx.arc(x, y, 5.5, 0, Math.PI * 2);
+        ctx.fill();
+
+        ctx.strokeStyle = '#e0f2fe';
+        ctx.lineWidth = 1.2;
+        ctx.stroke();
+
+        ctx.restore();
+      }
+    }
+
+    function drawFlowIndicators(current) {
+      if (!state.isClosed || Math.abs(current) < 0.001) return;
+
+      const clockwise = current > 0;
+
+      ctx.save();
+      ctx.fillStyle = 'rgba(56, 189, 248, 0.85)';
+      ctx.font = '700 12px system-ui, sans-serif';
+      ctx.textAlign = 'center';
+
+      ctx.fillText(clockwise ? '▲' : '▼', X_LEFT - 24, 240);
+      ctx.fillText(clockwise ? '▶' : '◀', 235, Y_TOP - 20);
+      ctx.fillText(clockwise ? '▶' : '◀', 525, Y_TOP - 20);
+
+      ctx.restore();
+    }
+
+    let lastTime = performance.now();
+
+    function animate(now) {
+      const dt = Math.min(0.05, (now - lastTime) / 1000);
+      lastTime = now;
+
+      const { current, power } = getPhysics();
+
+      const targetAngle = state.isClosed ? 0 : 0.58;
+      state.switchAngle += (targetAngle - state.switchAngle) * Math.min(1, dt * 14);
+
+      // Conventional current flows clockwise (+ -> -) when current > 0
+      const targetVelocity = current * 210;
+      state.currentVelocity += (targetVelocity - state.currentVelocity) * Math.min(1, dt * 10);
+
+      state.offset = ((state.offset + state.currentVelocity * dt) % totalLength + totalLength) % totalLength;
+
+      ctx.clearRect(0, 0, W, H);
+      drawGrid();
+      drawWires();
+      drawSwitch();
+      drawCell(285, Y_BOT, state.v1, state.p1, 'Cell 1');
+      drawCell(475, Y_BOT, state.v2, state.p2, 'Cell 2');
+      drawBulb(power);
+      drawCharges();
+      drawFlowIndicators(current);
+
+      requestAnimationFrame(animate);
+    }
+
+    updateUI();
+    requestAnimationFrame(animate);
+  </script>
+</body>
+</html>
