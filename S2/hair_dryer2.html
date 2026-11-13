@@ -1,0 +1,1196 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <title>Movable Hair Dryer — Heating Effect of Current</title>
+  <style>
+    :root {
+      --bg: #0f172a;
+      --panel: #1e293b;
+      --panel-border: #334155;
+      --text: #f1f5f9;
+      --muted: #94a3b8;
+      --accent-heat: #f97316;
+      --accent-water: #38bdf8;
+      --accent-green: #22c55e;
+      --accent-red: #ef4444;
+    }
+
+    * {
+      box-sizing: border-box;
+      margin: 0;
+      padding: 0;
+    }
+
+    body {
+      font-family: 'Segoe UI', system-ui, -apple-system, sans-serif;
+      background-color: var(--bg);
+      color: var(--text);
+      min-height: 100vh;
+      padding: 20px;
+      line-height: 1.5;
+    }
+
+    .container {
+      max-width: 1220px;
+      margin: 0 auto;
+    }
+
+    header {
+      text-align: center;
+      margin-bottom: 20px;
+    }
+
+    header h1 {
+      font-size: 1.75rem;
+      font-weight: 700;
+      letter-spacing: -0.02em;
+      margin-bottom: 6px;
+    }
+
+    header p {
+      color: var(--muted);
+      font-size: 0.95rem;
+    }
+
+    .formula-badge {
+      display: inline-block;
+      background: rgba(249, 115, 22, 0.15);
+      border: 1px solid rgba(249, 115, 22, 0.4);
+      color: #fdba74;
+      padding: 2px 10px;
+      border-radius: 999px;
+      font-family: 'Courier New', monospace;
+      font-weight: 600;
+      font-size: 0.9rem;
+      margin-left: 6px;
+    }
+
+    .grid {
+      display: grid;
+      grid-template-columns: 1.55fr 1fr;
+      gap: 20px;
+      align-items: start;
+    }
+
+    @media (max-width: 960px) {
+      .grid {
+        grid-template-columns: 1fr;
+      }
+    }
+
+    .card {
+      background: var(--panel);
+      border: 1px solid var(--panel-border);
+      border-radius: 14px;
+      padding: 18px;
+      box-shadow: 0 10px 25px rgba(0, 0, 0, 0.3);
+    }
+
+    .canvas-wrapper {
+      position: relative;
+      background: radial-gradient(circle at 60% 45%, #1e293b 0%, #0b1120 100%);
+      border: 1px solid #334155;
+      border-radius: 10px;
+      overflow: hidden;
+      margin-bottom: 16px;
+      touch-action: none; /* Smooth dragging on touchscreens */
+    }
+
+    canvas {
+      display: block;
+      width: 100%;
+      height: auto;
+      user-select: none;
+      -webkit-user-select: none;
+    }
+
+    .status-pill {
+      position: absolute;
+      top: 12px;
+      left: 12px;
+      padding: 5px 12px;
+      border-radius: 999px;
+      font-size: 0.8rem;
+      font-weight: 600;
+      background: rgba(15, 23, 42, 0.88);
+      border: 1px solid var(--panel-border);
+      display: flex;
+      align-items: center;
+      gap: 7px;
+      pointer-events: none;
+    }
+
+    .status-dot {
+      width: 9px;
+      height: 9px;
+      border-radius: 50%;
+      background: var(--muted);
+    }
+
+    .status-pill.running .status-dot {
+      background: var(--accent-heat);
+      box-shadow: 0 0 8px var(--accent-heat);
+      animation: pulse 1s infinite;
+    }
+
+    .status-pill.done .status-dot {
+      background: var(--accent-green);
+      box-shadow: 0 0 8px var(--accent-green);
+    }
+
+    .drag-tip {
+      position: absolute;
+      bottom: 12px;
+      left: 12px;
+      padding: 5px 11px;
+      border-radius: 8px;
+      font-size: 0.78rem;
+      color: #cbd5e1;
+      background: rgba(15, 23, 42, 0.82);
+      border: 1px solid rgba(148, 163, 184, 0.25);
+      pointer-events: none;
+    }
+
+    @keyframes pulse {
+      0%, 100% { opacity: 1; }
+      50% { opacity: 0.4; }
+    }
+
+    /* Controls */
+    .controls {
+      display: flex;
+      flex-direction: column;
+      gap: 16px;
+    }
+
+    .control-header {
+      display: flex;
+      justify-content: space-between;
+      align-items: center;
+      margin-bottom: 6px;
+    }
+
+    .control-header label {
+      font-weight: 600;
+      font-size: 0.95rem;
+    }
+
+    .current-readout {
+      font-family: 'Courier New', monospace;
+      font-size: 1.25rem;
+      font-weight: 700;
+      color: var(--accent-heat);
+    }
+
+    input[type="range"] {
+      width: 100%;
+      height: 8px;
+      border-radius: 4px;
+      background: #0f172a;
+      outline: none;
+      -webkit-appearance: none;
+      cursor: pointer;
+    }
+
+    input[type="range"]::-webkit-slider-thumb {
+      -webkit-appearance: none;
+      width: 22px;
+      height: 22px;
+      border-radius: 50%;
+      background: var(--accent-heat);
+      border: 2px solid #fff;
+      cursor: pointer;
+      box-shadow: 0 0 10px rgba(249, 115, 22, 0.6);
+    }
+
+    .presets {
+      display: flex;
+      gap: 8px;
+      flex-wrap: wrap;
+      margin-top: 8px;
+    }
+
+    .preset-btn {
+      background: #0f172a;
+      color: var(--muted);
+      border: 1px solid var(--panel-border);
+      padding: 4px 10px;
+      border-radius: 6px;
+      font-size: 0.8rem;
+      cursor: pointer;
+      transition: all 0.15s;
+    }
+
+    .preset-btn:hover {
+      color: var(--text);
+      border-color: var(--accent-heat);
+    }
+
+    .btn-row {
+      display: flex;
+      gap: 12px;
+      flex-wrap: wrap;
+    }
+
+    .btn {
+      flex: 1;
+      min-width: 140px;
+      padding: 12px 18px;
+      border: none;
+      border-radius: 8px;
+      font-size: 0.95rem;
+      font-weight: 600;
+      cursor: pointer;
+      transition: transform 0.1s, opacity 0.15s, background-color 0.2s;
+    }
+
+    .btn:active {
+      transform: scale(0.98);
+    }
+
+    .btn-primary {
+      background: var(--accent-heat);
+      color: #fff;
+    }
+
+    .btn-primary.active {
+      background: var(--accent-red);
+    }
+
+    .btn-secondary {
+      background: #334155;
+      color: var(--text);
+    }
+
+    .btn-secondary:hover {
+      background: #475569;
+    }
+
+    /* Sidebar */
+    .sidebar {
+      display: flex;
+      flex-direction: column;
+      gap: 16px;
+    }
+
+    .timer-box {
+      background: #0b1120;
+      border: 1px solid var(--panel-border);
+      border-radius: 10px;
+      padding: 15px;
+      text-align: center;
+    }
+
+    .timer-label {
+      font-size: 0.8rem;
+      text-transform: uppercase;
+      letter-spacing: 0.08em;
+      color: var(--muted);
+      margin-bottom: 4px;
+    }
+
+    .timer-value {
+      font-family: 'Courier New', monospace;
+      font-size: 2.5rem;
+      font-weight: 700;
+      color: var(--text);
+    }
+
+    .timer-value.complete {
+      color: var(--accent-green);
+    }
+
+    .moisture-section {
+      margin-top: 14px;
+    }
+
+    .moisture-header {
+      display: flex;
+      justify-content: space-between;
+      font-size: 0.9rem;
+      margin-bottom: 6px;
+    }
+
+    .progress-track {
+      width: 100%;
+      height: 14px;
+      background: #0b1120;
+      border-radius: 999px;
+      overflow: hidden;
+      border: 1px solid var(--panel-border);
+    }
+
+    .progress-fill {
+      height: 100%;
+      width: 100%;
+      background: linear-gradient(90deg, #0284c7, #38bdf8);
+      transition: width 0.06s linear;
+    }
+
+    .stats-grid {
+      display: grid;
+      grid-template-columns: 1fr 1fr;
+      gap: 10px;
+      margin-top: 14px;
+    }
+
+    .stat-item {
+      background: #0f172a;
+      border: 1px solid var(--panel-border);
+      border-radius: 8px;
+      padding: 10px 12px;
+    }
+
+    .stat-label {
+      font-size: 0.75rem;
+      color: var(--muted);
+    }
+
+    .stat-val {
+      font-family: 'Courier New', monospace;
+      font-size: 1.05rem;
+      font-weight: 700;
+      margin-top: 2px;
+    }
+
+    /* Log Table */
+    .log-header {
+      display: flex;
+      justify-content: space-between;
+      align-items: center;
+      margin-bottom: 10px;
+    }
+
+    .log-header h3 {
+      font-size: 0.95rem;
+    }
+
+    .clear-log {
+      background: none;
+      border: none;
+      color: var(--muted);
+      font-size: 0.8rem;
+      cursor: pointer;
+      text-decoration: underline;
+    }
+
+    .table-wrap {
+      max-height: 190px;
+      overflow-y: auto;
+      border: 1px solid var(--panel-border);
+      border-radius: 8px;
+    }
+
+    table {
+      width: 100%;
+      border-collapse: collapse;
+      font-size: 0.85rem;
+      text-align: left;
+    }
+
+    th, td {
+      padding: 8px 10px;
+      border-bottom: 1px solid var(--panel-border);
+    }
+
+    th {
+      background: #0f172a;
+      color: var(--muted);
+      font-weight: 600;
+      position: sticky;
+      top: 0;
+    }
+
+    .empty-log {
+      text-align: center;
+      color: var(--muted);
+      padding: 16px;
+      font-style: italic;
+    }
+
+    .hint-box {
+      font-size: 0.82rem;
+      color: var(--muted);
+      background: rgba(56, 189, 248, 0.08);
+      border-left: 3px solid var(--accent-water);
+      padding: 10px 12px;
+      border-radius: 0 8px 8px 0;
+    }
+  </style>
+</head>
+<body>
+  <div class="container">
+    <header>
+      <h1>Heating Effect of Electric Current (Interactive Sweeping)</h1>
+      <p>
+        Set the electric current, turn on the hair dryer, and <strong>drag it across the wet paper</strong> until every spot is dry.
+        <span class="formula-badge">P = I²R</span>
+      </p>
+    </header>
+
+    <div class="grid">
+      <!-- Left Column: Interactive Canvas + Controls -->
+      <div class="card">
+        <div class="canvas-wrapper">
+          <canvas id="simCanvas" width="740" height="440"></canvas>
+          <div id="statusPill" class="status-pill">
+            <span class="status-dot"></span>
+            <span id="statusText">Ready — Paper is 100% wet</span>
+          </div>
+          <div id="dragTip" class="drag-tip">
+            Drag the hair dryer across the wet paper to aim the heat beam
+          </div>
+        </div>
+
+        <div class="controls">
+          <div>
+            <div class="control-header">
+              <label for="currentSlider">Heating Element Current (I)</label>
+              <span class="current-readout"><span id="currentDisplay">6.0</span> A</span>
+            </div>
+            <input type="range" id="currentSlider" min="0" max="10" step="0.5" value="6" />
+            <div class="presets">
+              <span style="font-size: 0.8rem; color: var(--muted); align-self: center;">Presets:</span>
+              <button class="preset-btn" data-val="0">0 A (Off)</button>
+              <button class="preset-btn" data-val="2">2 A</button>
+              <button class="preset-btn" data-val="4">4 A</button>
+              <button class="preset-btn" data-val="6">6 A</button>
+              <button class="preset-btn" data-val="8">8 A</button>
+              <button class="preset-btn" data-val="10">10 A (Max)</button>
+            </div>
+          </div>
+
+          <div class="btn-row">
+            <button id="toggleBtn" class="btn btn-primary">Turn On Hair Dryer</button>
+            <button id="resetBtn" class="btn btn-secondary">Re-Wet Paper (Reset)</button>
+          </div>
+        </div>
+      </div>
+
+      <!-- Right Column: Telemetry & Log -->
+      <div class="sidebar">
+        <div class="card">
+          <div class="timer-box">
+            <div class="timer-label">Time to Completely Dry</div>
+            <div id="timerDisplay" class="timer-value">00.00 s</div>
+          </div>
+
+          <div class="moisture-section">
+            <div class="moisture-header">
+              <span>Overall Paper Moisture</span>
+              <strong id="moistureText" style="color: var(--accent-water);">100.0%</strong>
+            </div>
+            <div class="progress-track">
+              <div id="moistureBar" class="progress-fill"></div>
+            </div>
+          </div>
+
+          <div class="stats-grid">
+            <div class="stat-item">
+              <div class="stat-label">Coil Resistance (R)</div>
+              <div class="stat-val">10.0 Ω</div>
+            </div>
+            <div class="stat-item">
+              <div class="stat-label">Heating Power (I²R)</div>
+              <div id="powerDisplay" class="stat-val" style="color: var(--accent-heat);">360 W</div>
+            </div>
+            <div class="stat-item">
+              <div class="stat-label">Est. Coil Temp</div>
+              <div id="tempDisplay" class="stat-val">20 °C</div>
+            </div>
+            <div class="stat-item">
+              <div class="stat-label">Heat Absorbed</div>
+              <div id="energyDisplay" class="stat-val">0%</div>
+            </div>
+          </div>
+        </div>
+
+        <div class="card">
+          <div class="log-header">
+            <h3>Experiment Results Log</h3>
+            <button id="clearLogBtn" class="clear-log">Clear Log</button>
+          </div>
+          <div class="table-wrap">
+            <table>
+              <thead>
+                <tr>
+                  <th>#</th>
+                  <th>Current (I)</th>
+                  <th>Power (P)</th>
+                  <th>Total Time</th>
+                </tr>
+              </thead>
+              <tbody id="logBody">
+                <tr>
+                  <td colspan="4" class="empty-log">Dry the entire paper sheet to record time.</td>
+                </tr>
+              </tbody>
+            </table>
+          </div>
+          <div class="hint-box" style="margin-top: 12px;">
+            <strong>Tip:</strong> Keep the glowing target circle moving over <strong>blue wet patches</strong>. Heat aimed at already-dry white paper doesn't speed up drying!
+          </div>
+        </div>
+      </div>
+    </div>
+  </div>
+
+  <script>
+    // --- Physics & Grid Constants ---
+    const RESISTANCE = 10; // Ohms
+    const COLS = 28;
+    const ROWS = 21;
+    const TOTAL_CELLS = COLS * ROWS;
+    const CELL_ENERGY = 8.0; // Joules needed to dry one cell (Total sheet = 4704 J)
+    const HEAT_RADIUS = 72;  // Radius of hot air impact cone on paper (px)
+    const CONE_NORM = 21.0;  // Sum of radial weights in cone for power distribution
+
+    // Paper board coordinates on 740x440 canvas
+    const PAPER = { x: 250, y: 55, w: 392, h: 294 };
+
+    // --- Simulation State ---
+    let current = 6.0;
+    let isDryerOn = false;
+    let isComplete = false;
+    let elapsedTime = 0;
+    let currentChangedMidRun = false;
+    let runStartCurrent = 6.0;
+    let runCount = 0;
+
+    // 2D Moisture Array [0..1]
+    const moistureGrid = new Float32Array(TOTAL_CELLS);
+    moistureGrid.fill(1.0);
+
+    // Offscreen canvas for smooth moisture rendering
+    const wetCanvas = document.createElement('canvas');
+    wetCanvas.width = COLS;
+    wetCanvas.height = ROWS;
+    const wetCtx = wetCanvas.getContext('2d');
+    const wetImgData = wetCtx.createImageData(COLS, ROWS);
+
+    // Movable Hair Dryer State
+    const dryer = {
+      x: 135,
+      y: 225,
+      angle: -0.22, // Tilted slightly upward-right toward the paper
+      isDragging: false,
+      dragOffsetX: 0,
+      dragOffsetY: 0,
+      hasBeenDragged: false
+    };
+
+    // Visual animations
+    let fanAngle = 0;
+    let visualHeatGlow = 0;
+    let lastTimestamp = null;
+    const airParticles = [];
+    const steamParticles = [];
+
+    // --- DOM Elements ---
+    const canvas = document.getElementById('simCanvas');
+    const ctx = canvas.getContext('2d');
+    const currentSlider = document.getElementById('currentSlider');
+    const currentDisplay = document.getElementById('currentDisplay');
+    const toggleBtn = document.getElementById('toggleBtn');
+    const resetBtn = document.getElementById('resetBtn');
+    const timerDisplay = document.getElementById('timerDisplay');
+    const moistureBar = document.getElementById('moistureBar');
+    const moistureText = document.getElementById('moistureText');
+    const powerDisplay = document.getElementById('powerDisplay');
+    const tempDisplay = document.getElementById('tempDisplay');
+    const energyDisplay = document.getElementById('energyDisplay');
+    const statusPill = document.getElementById('statusPill');
+    const statusText = document.getElementById('statusText');
+    const dragTip = document.getElementById('dragTip');
+    const logBody = document.getElementById('logBody');
+    const clearLogBtn = document.getElementById('clearLogBtn');
+    const presetBtns = document.querySelectorAll('.preset-btn');
+
+    // --- Nozzle & Target Math ---
+    function getNozzleAndTarget() {
+      const cos = Math.cos(dryer.angle);
+      const sin = Math.sin(dryer.angle);
+      // Nozzle tip is 78px ahead of dryer center
+      const nozzleX = dryer.x + cos * 78;
+      const nozzleY = dryer.y + sin * 78;
+      // Heat beam lands 58px ahead of nozzle tip
+      const targetX = dryer.x + cos * 136;
+      const targetY = dryer.y + sin * 136;
+      return { nozzleX, nozzleY, targetX, targetY };
+    }
+
+    // --- Pointer Dragging (Mouse + Touch) ---
+    function getCanvasCoords(e) {
+      const rect = canvas.getBoundingClientRect();
+      const scaleX = canvas.width / rect.width;
+      const scaleY = canvas.height / rect.height;
+      return {
+        x: (e.clientX - rect.left) * scaleX,
+        y: (e.clientY - rect.top) * scaleY
+      };
+    }
+
+    function isPointOnDryer(px, py) {
+      // Generous hit-test box around dryer body + handle
+      const dx = px - dryer.x;
+      const dy = py - dryer.y;
+      return Math.abs(dx) < 95 && dy > -65 && dy < 115;
+    }
+
+    canvas.addEventListener('pointerdown', (e) => {
+      const pt = getCanvasCoords(e);
+      if (isPointOnDryer(pt.x, pt.y)) {
+        dryer.isDragging = true;
+        dryer.dragOffsetX = pt.x - dryer.x;
+        dryer.dragOffsetY = pt.y - dryer.y;
+        dryer.hasBeenDragged = true;
+        dragTip.style.display = 'none';
+        canvas.setPointerCapture(e.pointerId);
+        canvas.style.cursor = 'grabbing';
+      }
+    });
+
+    canvas.addEventListener('pointermove', (e) => {
+      const pt = getCanvasCoords(e);
+      if (dryer.isDragging) {
+        dryer.x = Math.max(55, Math.min(canvas.width - 75, pt.x - dryer.dragOffsetX));
+        dryer.y = Math.max(65, Math.min(canvas.height - 65, pt.y - dryer.dragOffsetY));
+      } else {
+        canvas.style.cursor = isPointOnDryer(pt.x, pt.y) ? 'grab' : 'default';
+      }
+    });
+
+    function stopDragging(e) {
+      if (dryer.isDragging) {
+        dryer.isDragging = false;
+        canvas.style.cursor = 'grab';
+        try { canvas.releasePointerCapture(e.pointerId); } catch {}
+      }
+    }
+
+    canvas.addEventListener('pointerup', stopDragging);
+    canvas.addEventListener('pointercancel', stopDragging);
+
+    // --- UI Controls ---
+    function setCurrent(val) {
+      const newVal = parseFloat(val);
+      if ((isDryerOn || elapsedTime > 0) && !isComplete && newVal !== current) {
+        currentChangedMidRun = true;
+      }
+      current = newVal;
+      currentSlider.value = current;
+      currentDisplay.textContent = current.toFixed(1);
+      updateTelemetry();
+    }
+
+    currentSlider.addEventListener('input', (e) => setCurrent(e.target.value));
+    presetBtns.forEach((btn) => btn.addEventListener('click', () => setCurrent(btn.dataset.val)));
+
+    toggleBtn.addEventListener('click', () => {
+      if (isComplete) {
+        resetSimulation();
+        isDryerOn = true;
+        runStartCurrent = current;
+        currentChangedMidRun = false;
+      } else {
+        if (!isDryerOn && elapsedTime === 0) {
+          runStartCurrent = current;
+          currentChangedMidRun = false;
+        }
+        isDryerOn = !isDryerOn;
+      }
+      updateUIState();
+    });
+
+    resetBtn.addEventListener('click', resetSimulation);
+
+    clearLogBtn.addEventListener('click', () => {
+      runCount = 0;
+      logBody.innerHTML = '<tr><td colspan="4" class="empty-log">Dry the entire paper sheet to record time.</td></tr>';
+    });
+
+    function resetSimulation() {
+      isDryerOn = false;
+      isComplete = false;
+      elapsedTime = 0;
+      currentChangedMidRun = false;
+      moistureGrid.fill(1.0);
+      airParticles.length = 0;
+      steamParticles.length = 0;
+      updateTelemetry();
+      updateUIState();
+    }
+
+    function getAverageMoisture() {
+      let sum = 0;
+      for (let i = 0; i < TOTAL_CELLS; i++) {
+        sum += moistureGrid[i];
+      }
+      return sum / TOTAL_CELLS;
+    }
+
+    function updateUIState() {
+      const avg = getAverageMoisture();
+      if (isComplete) {
+        toggleBtn.textContent = 'Re-Wet & Start Again';
+        toggleBtn.classList.remove('active');
+        statusPill.className = 'status-pill done';
+        statusText.textContent = `Completely Dry in ${elapsedTime.toFixed(2)} s!`;
+        timerDisplay.classList.add('complete');
+      } else if (isDryerOn) {
+        toggleBtn.textContent = 'Turn Off Hair Dryer';
+        toggleBtn.classList.add('active');
+        statusPill.className = 'status-pill running';
+        statusText.textContent = current === 0
+          ? 'Dryer On — 0 A (No Heat Generated)'
+          : 'Drag dryer over remaining blue wet spots';
+        timerDisplay.classList.remove('complete');
+      } else {
+        toggleBtn.textContent = elapsedTime > 0 ? 'Resume Hair Dryer' : 'Turn On Hair Dryer';
+        toggleBtn.classList.remove('active');
+        statusPill.className = 'status-pill';
+        statusText.textContent = elapsedTime > 0
+          ? `Paused (${(avg * 100).toFixed(1)}% wet)`
+          : 'Ready — Paper is 100% wet';
+        timerDisplay.classList.remove('complete');
+      }
+    }
+
+    function updateTelemetry() {
+      const power = current * current * RESISTANCE;
+      powerDisplay.textContent = `${power.toFixed(0)} W`;
+
+      const targetTemp = isDryerOn ? 20 + power * 0.48 : 20;
+      tempDisplay.textContent = `${Math.round(targetTemp)} °C`;
+
+      timerDisplay.textContent = `${elapsedTime.toFixed(2).padStart(5, '0')} s`;
+
+      const avg = getAverageMoisture();
+      const pct = Math.max(0, avg * 100);
+      moistureText.textContent = `${pct.toFixed(1)}%`;
+      moistureBar.style.width = `${pct}%`;
+
+      const driedPct = Math.min(100, Math.max(0, (1 - avg) * 100));
+      energyDisplay.textContent = `${driedPct.toFixed(1)}% dried`;
+    }
+
+    function logRun() {
+      if (runCount === 0) {
+        logBody.innerHTML = '';
+      }
+      runCount++;
+      const row = document.createElement('tr');
+      const currentLabel = currentChangedMidRun ? 'Variable' : `${runStartCurrent.toFixed(1)} A`;
+      const powerLabel = currentChangedMidRun ? 'Variable' : `${(runStartCurrent * runStartCurrent * RESISTANCE).toFixed(0)} W`;
+
+      row.innerHTML = `
+        <td>${runCount}</td>
+        <td>${currentLabel}</td>
+        <td>${powerLabel}</td>
+        <td><strong style="color: var(--accent-green);">${elapsedTime.toFixed(2)} s</strong></td>
+      `;
+      logBody.prepend(row);
+    }
+
+    // --- Particle Spawners ---
+    function spawnAirParticle(power, nozzleX, nozzleY) {
+      const heatRatio = Math.min(1, power / 1000);
+      const spread = (Math.random() - 0.5) * 0.35;
+      const angle = dryer.angle + spread;
+      const speed = 220 + Math.random() * 110 + heatRatio * 80;
+      airParticles.push({
+        x: nozzleX + (Math.random() - 0.5) * 14,
+        y: nozzleY + (Math.random() - 0.5) * 14,
+        vx: Math.cos(angle) * speed,
+        vy: Math.sin(angle) * speed,
+        life: 1.0,
+        heat: heatRatio,
+        size: 2 + Math.random() * 2.2
+      });
+    }
+
+    function spawnSteamParticle(x, y, power) {
+      const heatRatio = Math.min(1, power / 1000);
+      steamParticles.push({
+        x: x + (Math.random() - 0.5) * 20,
+        y: y + (Math.random() - 0.5) * 20,
+        vx: (Math.random() - 0.3) * 22,
+        vy: -(35 + Math.random() * 45 + heatRatio * 35),
+        life: 1.0,
+        size: 4 + Math.random() * 6
+      });
+    }
+
+    // --- Main Loop ---
+    function step(timestamp) {
+      if (lastTimestamp === null) lastTimestamp = timestamp;
+      const dt = Math.min((timestamp - lastTimestamp) / 1000, 0.05);
+      lastTimestamp = timestamp;
+
+      const power = current * current * RESISTANCE;
+      const { nozzleX, nozzleY, targetX, targetY } = getNozzleAndTarget();
+
+      // Update moisture grid when dryer is running
+      if (isDryerOn && !isComplete) {
+        elapsedTime += dt;
+
+        if (power > 0) {
+          const cellW = PAPER.w / COLS;
+          const cellH = PAPER.h / ROWS;
+          let wetCellsHeated = 0;
+
+          for (let r = 0; r < ROWS; r++) {
+            const cy = PAPER.y + (r + 0.5) * cellH;
+            for (let c = 0; c < COLS; c++) {
+              const idx = r * COLS + c;
+              if (moistureGrid[idx] <= 0) continue;
+
+              const cx = PAPER.x + (c + 0.5) * cellW;
+              const dx = cx - targetX;
+              const dy = cy - targetY;
+              const dist = Math.hypot(dx, dy);
+
+              if (dist < HEAT_RADIUS) {
+                const weight = Math.pow(1 - dist / HEAT_RADIUS, 1.3);
+                const energyInCell = (weight / CONE_NORM) * power * dt;
+                const dMoisture = energyInCell / CELL_ENERGY;
+
+                moistureGrid[idx] = Math.max(0, moistureGrid[idx] - dMoisture);
+                // Snap tiny trace values so user isn't stuck on invisible 0.5% specks
+                if (moistureGrid[idx] < 0.015) {
+                  moistureGrid[idx] = 0;
+                }
+                wetCellsHeated++;
+
+                if (Math.random() < 0.015 * weight * (0.3 + power / 1000)) {
+                  spawnSteamParticle(cx, cy, power);
+                }
+              }
+            }
+          }
+        }
+
+        // Check completion
+        if (getAverageMoisture() <= 0) {
+          isComplete = true;
+          isDryerOn = false;
+          logRun();
+          updateUIState();
+        }
+        updateTelemetry();
+      }
+
+      // Smooth visual coil glow
+      const targetGlow = (isDryerOn && current > 0) ? Math.min(1, power / 1000) : 0;
+      visualHeatGlow += (targetGlow - visualHeatGlow) * Math.min(1, dt * 8);
+
+      // Fan rotation
+      if (isDryerOn) {
+        fanAngle += dt * 20;
+      }
+
+      // Spawn air stream particles
+      if (isDryerOn) {
+        const count = current > 0 ? 2 : 1;
+        for (let i = 0; i < count; i++) {
+          if (Math.random() < 0.8) spawnAirParticle(power, nozzleX, nozzleY);
+        }
+      }
+
+      // Update air particles
+      for (let i = airParticles.length - 1; i >= 0; i--) {
+        const p = airParticles[i];
+        p.x += p.vx * dt;
+        p.y += p.vy * dt;
+        p.life -= dt * 3.8;
+        if (p.life <= 0) airParticles.splice(i, 1);
+      }
+
+      // Update steam particles
+      for (let i = steamParticles.length - 1; i >= 0; i--) {
+        const s = steamParticles[i];
+        s.x += s.vx * dt;
+        s.y += s.vy * dt;
+        s.size += dt * 8;
+        s.life -= dt * 0.95;
+        if (s.life <= 0) steamParticles.splice(i, 1);
+      }
+
+      drawScene(nozzleX, nozzleY, targetX, targetY, power);
+      requestAnimationFrame(step);
+    }
+
+    // --- Canvas Rendering ---
+    function drawScene(nozzleX, nozzleY, targetX, targetY, power) {
+      ctx.clearRect(0, 0, canvas.width, canvas.height);
+
+      drawBackingBoardAndPaper();
+      drawHeatZoneOnPaper(targetX, targetY, power);
+      drawAirflow();
+      drawSteam();
+      drawMovableHairDryer();
+    }
+
+    function drawBackingBoardAndPaper() {
+      // Dark wooden lab drying board behind paper
+      ctx.save();
+      ctx.fillStyle = '#293548';
+      ctx.strokeStyle = '#475569';
+      ctx.lineWidth = 3;
+      ctx.beginPath();
+      ctx.roundRect(PAPER.x - 22, PAPER.y - 26, PAPER.w + 44, PAPER.h + 52, 12);
+      ctx.fill();
+      ctx.stroke();
+
+      // Paper shadow
+      ctx.fillStyle = 'rgba(0, 0, 0, 0.35)';
+      ctx.fillRect(PAPER.x + 6, PAPER.y + 6, PAPER.w, PAPER.h);
+
+      // Dry crisp paper base
+      ctx.fillStyle = '#f8fafc';
+      ctx.fillRect(PAPER.x, PAPER.y, PAPER.w, PAPER.h);
+
+      // Render 2D Moisture Grid onto offscreen canvas
+      const data = wetImgData.data;
+      for (let i = 0; i < TOTAL_CELLS; i++) {
+        const m = moistureGrid[i];
+        const p = i * 4;
+        if (m <= 0) {
+          data[p + 3] = 0;
+        } else {
+          // Darker saturated wet-paper blue-grey tint
+          data[p] = 35;      // R
+          data[p + 1] = 145; // G
+          data[p + 2] = 225; // B
+          data[p + 3] = Math.round(Math.min(200, 45 + m * 145)); // Alpha
+        }
+      }
+      wetCtx.putImageData(wetImgData, 0, 0);
+
+      // Scale smoothly onto main paper
+      ctx.imageSmoothingEnabled = true;
+      ctx.imageSmoothingQuality = 'high';
+      ctx.drawImage(wetCanvas, PAPER.x, PAPER.y, PAPER.w, PAPER.h);
+
+      // Subtle paper border
+      ctx.strokeStyle = '#cbd5e1';
+      ctx.lineWidth = 1.5;
+      ctx.strokeRect(PAPER.x, PAPER.y, PAPER.w, PAPER.h);
+
+      // Two metal clips holding the paper at the top
+      ctx.fillStyle = '#94a3b8';
+      ctx.fillRect(PAPER.x + 48, PAPER.y - 12, 36, 18);
+      ctx.fillRect(PAPER.x + PAPER.w - 84, PAPER.y - 12, 36, 18);
+      ctx.fillStyle = '#cbd5e1';
+      ctx.fillRect(PAPER.x + 54, PAPER.y - 8, 24, 6);
+      ctx.fillRect(PAPER.x + PAPER.w - 78, PAPER.y - 8, 24, 6);
+
+      // Label at bottom of board
+      const avg = getAverageMoisture();
+      ctx.fillStyle = avg <= 0 ? '#22c55e' : '#38bdf8';
+      ctx.font = 'bold 13px sans-serif';
+      ctx.textAlign = 'center';
+      ctx.fillText(
+        avg <= 0 ? 'PAPER COMPLETELY DRY!' : 'WET PAPER SHEET',
+        PAPER.x + PAPER.w / 2,
+        PAPER.y + PAPER.h + 19
+      );
+
+      ctx.restore();
+    }
+
+    function drawHeatZoneOnPaper(targetX, targetY, power) {
+      // Draw aiming target ring / warm spot so user sees exactly where heat lands
+      ctx.save();
+
+      // Clip glow strictly to paper surface
+      ctx.beginPath();
+      ctx.rect(PAPER.x, PAPER.y, PAPER.w, PAPER.h);
+      ctx.clip();
+
+      if (isDryerOn && power > 0) {
+        const intensity = Math.min(1, power / 1000);
+        const grad = ctx.createRadialGradient(targetX, targetY, 4, targetX, targetY, HEAT_RADIUS);
+        grad.addColorStop(0, `rgba(251, 146, 60, ${0.42 * intensity})`);
+        grad.addColorStop(0.6, `rgba(249, 115, 22, ${0.18 * intensity})`);
+        grad.addColorStop(1, 'rgba(249, 115, 22, 0)');
+        ctx.fillStyle = grad;
+        ctx.beginPath();
+        ctx.arc(targetX, targetY, HEAT_RADIUS, 0, Math.PI * 2);
+        ctx.fill();
+      }
+
+      ctx.restore();
+
+      // Subtle dashed aiming circle even when off/moving
+      ctx.save();
+      ctx.strokeStyle = isDryerOn && power > 0
+        ? `rgba(251, 146, 60, ${0.35 + 0.4 * Math.min(1, power / 1000)})`
+        : 'rgba(148, 163, 184, 0.35)';
+      ctx.lineWidth = 1.5;
+      ctx.setLineDash([5, 5]);
+      ctx.beginPath();
+      ctx.arc(targetX, targetY, HEAT_RADIUS * 0.72, 0, Math.PI * 2);
+      ctx.stroke();
+      ctx.restore();
+    }
+
+    function drawMovableHairDryer() {
+      ctx.save();
+      ctx.translate(dryer.x, dryer.y);
+      ctx.rotate(dryer.angle);
+
+      // Soft drop shadow so dryer floats above paper
+      ctx.shadowColor = 'rgba(0, 0, 0, 0.55)';
+      ctx.shadowBlur = dryer.isDragging ? 22 : 12;
+      ctx.shadowOffsetX = dryer.isDragging ? 10 : 5;
+      ctx.shadowOffsetY = dryer.isDragging ? 14 : 7;
+
+      // Handle
+      ctx.fillStyle = '#334155';
+      ctx.strokeStyle = '#64748b';
+      ctx.lineWidth = 2;
+      ctx.beginPath();
+      ctx.moveTo(-28, 22);
+      ctx.lineTo(4, 22);
+      ctx.lineTo(-10, 92);
+      ctx.quadraticCurveTo(-15, 98, -24, 96);
+      ctx.lineTo(-36, 92);
+      ctx.quadraticCurveTo(-42, 88, -39, 78);
+      ctx.closePath();
+      ctx.fill();
+      ctx.stroke();
+
+      // Reset shadow for crisp interior details
+      ctx.shadowColor = 'transparent';
+
+      // Power switch on handle
+      ctx.fillStyle = isDryerOn ? '#ef4444' : '#64748b';
+      ctx.fillRect(-4, 42, 8, 16);
+
+      // Main Barrel Shell
+      ctx.fillStyle = '#1e293b';
+      ctx.strokeStyle = dryer.isDragging ? '#fb923c' : '#64748b';
+      ctx.lineWidth = dryer.isDragging ? 2.8 : 2.2;
+      ctx.beginPath();
+      ctx.moveTo(-55, -28);
+      ctx.lineTo(15, -28);
+      ctx.lineTo(75, -18);
+      ctx.lineTo(75, 18);
+      ctx.lineTo(15, 28);
+      ctx.lineTo(-55, 28);
+      ctx.arc(-55, 0, 28, Math.PI * 0.5, Math.PI * 1.5);
+      ctx.closePath();
+      ctx.fill();
+      ctx.stroke();
+
+      // Cutaway Window inside barrel
+      ctx.fillStyle = '#090d16';
+      ctx.strokeStyle = '#475569';
+      ctx.lineWidth = 1.2;
+      ctx.beginPath();
+      ctx.roundRect(-22, -19, 86, 38, 5);
+      ctx.fill();
+      ctx.stroke();
+
+      // Spinning Fan
+      ctx.save();
+      ctx.translate(-52, 0);
+      ctx.fillStyle = '#334155';
+      ctx.beginPath();
+      ctx.arc(0, 0, 16, 0, Math.PI * 2);
+      ctx.fill();
+      ctx.rotate(fanAngle);
+      ctx.fillStyle = '#94a3b8';
+      for (let i = 0; i < 4; i++) {
+        ctx.rotate(Math.PI / 2);
+        ctx.beginPath();
+        ctx.ellipse(8, 0, 7, 2.8, 0.25, 0, Math.PI * 2);
+        ctx.fill();
+      }
+      ctx.restore();
+
+      // Glowing Heating Coil inside cutaway
+      let r, g, b;
+      if (visualHeatGlow < 0.02) {
+        r = 100; g = 116; b = 139;
+      } else if (visualHeatGlow < 0.5) {
+        const k = visualHeatGlow / 0.5;
+        r = Math.round(100 + 155 * k);
+        g = Math.round(116 - 50 * k);
+        b = Math.round(139 - 120 * k);
+      } else {
+        const k = (visualHeatGlow - 0.5) / 0.5;
+        r = 255;
+        g = Math.round(66 + 170 * k);
+        b = Math.round(19 + 130 * k);
+      }
+
+      ctx.save();
+      if (visualHeatGlow > 0.05) {
+        ctx.shadowColor = `rgba(255, ${Math.round(90 + 120 * visualHeatGlow)}, 20, ${0.9 * visualHeatGlow})`;
+        ctx.shadowBlur = 8 + visualHeatGlow * 18;
+      }
+      ctx.strokeStyle = `rgb(${r}, ${g}, ${b})`;
+      ctx.lineWidth = 3.5;
+      ctx.lineJoin = 'round';
+      ctx.beginPath();
+      const loops = 8;
+      const startX = -14;
+      const endX = 56;
+      const stepX = (endX - startX) / loops;
+      ctx.moveTo(startX - 5, 0);
+      for (let i = 0; i <= loops; i++) {
+        ctx.lineTo(startX + i * stepX, i % 2 === 0 ? -12 : 12);
+      }
+      ctx.lineTo(endX + 5, 0);
+      ctx.stroke();
+      ctx.restore();
+
+      // Nozzle tip
+      ctx.fillStyle = '#475569';
+      ctx.fillRect(72, -19, 7, 38);
+
+      // Subtle "Drag" grip lines on handle
+      ctx.strokeStyle = '#64748b';
+      ctx.lineWidth = 1.5;
+      for (let i = 0; i < 3; i++) {
+        ctx.beginPath();
+        ctx.moveTo(-26, 48 + i * 9);
+        ctx.lineTo(-14, 48 + i * 9);
+        ctx.stroke();
+      }
+
+      ctx.restore();
+    }
+
+    function drawAirflow() {
+      for (const p of airParticles) {
+        const r = Math.round(148 + p.heat * 107);
+        const g = Math.round(195 - p.heat * 65);
+        const b = Math.round(255 - p.heat * 215);
+        ctx.fillStyle = `rgba(${r}, ${g}, ${b}, ${p.life * 0.75})`;
+        ctx.beginPath();
+        ctx.arc(p.x, p.y, p.size, 0, Math.PI * 2);
+        ctx.fill();
+      }
+    }
+
+    function drawSteam() {
+      for (const s of steamParticles) {
+        ctx.fillStyle = `rgba(241, 245, 249, ${s.life * 0.35})`;
+        ctx.beginPath();
+        ctx.arc(s.x, s.y, s.size, 0, Math.PI * 2);
+        ctx.fill();
+      }
+    }
+
+    // Initialize
+    updateTelemetry();
+    updateUIState();
+    requestAnimationFrame(step);
+  </script>
+</body>
+</html>
