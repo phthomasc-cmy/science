@@ -1,0 +1,1469 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <title>Magnetic Effect of Current — Coils, Current & Weight</title>
+  <style>
+    :root {
+      --bg: #0f172a;
+      --panel: #1e293b;
+      --panel-border: #334155;
+      --text: #f1f5f9;
+      --muted: #94a3b8;
+      --accent-mag: #38bdf8;
+      --accent-coil: #f59e0b;
+      --accent-weight: #a855f7;
+      --accent-green: #22c55e;
+      --accent-red: #ef4444;
+    }
+
+    * {
+      box-sizing: border-box;
+      margin: 0;
+      padding: 0;
+    }
+
+    body {
+      font-family: 'Segoe UI', system-ui, -apple-system, sans-serif;
+      background-color: var(--bg);
+      color: var(--text);
+      min-height: 100vh;
+      padding: 20px;
+      line-height: 1.5;
+    }
+
+    .container {
+      max-width: 1240px;
+      margin: 0 auto;
+    }
+
+    header {
+      text-align: center;
+      margin-bottom: 20px;
+    }
+
+    header h1 {
+      font-size: 1.75rem;
+      font-weight: 700;
+      letter-spacing: -0.02em;
+      margin-bottom: 6px;
+    }
+
+    header p {
+      color: var(--muted);
+      font-size: 0.95rem;
+    }
+
+    .formula-badge {
+      display: inline-block;
+      background: rgba(56, 189, 248, 0.14);
+      border: 1px solid rgba(56, 189, 248, 0.4);
+      color: #7dd3fc;
+      padding: 2px 10px;
+      border-radius: 999px;
+      font-family: 'Courier New', monospace;
+      font-weight: 600;
+      font-size: 0.88rem;
+      margin-left: 6px;
+    }
+
+    .grid {
+      display: grid;
+      grid-template-columns: 1.55fr 1fr;
+      gap: 20px;
+      align-items: start;
+    }
+
+    @media (max-width: 980px) {
+      .grid {
+        grid-template-columns: 1fr;
+      }
+    }
+
+    .card {
+      background: var(--panel);
+      border: 1px solid var(--panel-border);
+      border-radius: 14px;
+      padding: 18px;
+      box-shadow: 0 10px 25px rgba(0, 0, 0, 0.3);
+    }
+
+    .canvas-wrapper {
+      position: relative;
+      background: radial-gradient(circle at 55% 45%, #1e293b 0%, #0b1120 100%);
+      border: 1px solid #334155;
+      border-radius: 10px;
+      overflow: hidden;
+      margin-bottom: 16px;
+      touch-action: none;
+    }
+
+    canvas {
+      display: block;
+      width: 100%;
+      height: auto;
+      user-select: none;
+      -webkit-user-select: none;
+    }
+
+    .status-pill {
+      position: absolute;
+      top: 12px;
+      left: 12px;
+      padding: 5px 12px;
+      border-radius: 999px;
+      font-size: 0.8rem;
+      font-weight: 600;
+      background: rgba(15, 23, 42, 0.88);
+      border: 1px solid var(--panel-border);
+      display: flex;
+      align-items: center;
+      gap: 7px;
+      pointer-events: none;
+    }
+
+    .status-dot {
+      width: 9px;
+      height: 9px;
+      border-radius: 50%;
+      background: var(--muted);
+    }
+
+    .status-pill.running .status-dot {
+      background: var(--accent-mag);
+      box-shadow: 0 0 8px var(--accent-mag);
+      animation: pulse 1s infinite;
+    }
+
+    .status-pill.warn .status-dot {
+      background: var(--accent-coil);
+      box-shadow: 0 0 8px var(--accent-coil);
+    }
+
+    .status-pill.done .status-dot {
+      background: var(--accent-green);
+      box-shadow: 0 0 8px var(--accent-green);
+    }
+
+    .drag-tip {
+      position: absolute;
+      top: 12px;
+      right: 12px;
+      padding: 5px 11px;
+      border-radius: 8px;
+      font-size: 0.78rem;
+      color: #cbd5e1;
+      background: rgba(15, 23, 42, 0.84);
+      border: 1px solid rgba(148, 163, 184, 0.25);
+      pointer-events: none;
+    }
+
+    @keyframes pulse {
+      0%, 100% { opacity: 1; }
+      50% { opacity: 0.4; }
+    }
+
+    /* Controls */
+    .controls {
+      display: flex;
+      flex-direction: column;
+      gap: 16px;
+    }
+
+    .sliders-grid {
+      display: grid;
+      grid-template-columns: 1fr 1fr 1fr;
+      gap: 16px;
+    }
+
+    @media (max-width: 780px) {
+      .sliders-grid {
+        grid-template-columns: 1fr;
+      }
+    }
+
+    .control-header {
+      display: flex;
+      justify-content: space-between;
+      align-items: center;
+      margin-bottom: 6px;
+      gap: 6px;
+    }
+
+    .control-header label {
+      font-weight: 600;
+      font-size: 0.88rem;
+    }
+
+    .readout-coil {
+      font-family: 'Courier New', monospace;
+      font-size: 1.05rem;
+      font-weight: 700;
+      color: var(--accent-coil);
+      white-space: nowrap;
+    }
+
+    .readout-curr {
+      font-family: 'Courier New', monospace;
+      font-size: 1.05rem;
+      font-weight: 700;
+      color: var(--accent-mag);
+      white-space: nowrap;
+    }
+
+    .readout-weight {
+      font-family: 'Courier New', monospace;
+      font-size: 1.05rem;
+      font-weight: 700;
+      color: #c084fc;
+      white-space: nowrap;
+    }
+
+    input[type="range"] {
+      width: 100%;
+      height: 8px;
+      border-radius: 4px;
+      background: #0f172a;
+      outline: none;
+      -webkit-appearance: none;
+      cursor: pointer;
+    }
+
+    #coilSlider::-webkit-slider-thumb {
+      -webkit-appearance: none;
+      width: 19px;
+      height: 19px;
+      border-radius: 50%;
+      background: var(--accent-coil);
+      border: 2px solid #fff;
+      cursor: pointer;
+      box-shadow: 0 0 8px rgba(245, 158, 11, 0.6);
+    }
+
+    #currentSlider::-webkit-slider-thumb {
+      -webkit-appearance: none;
+      width: 19px;
+      height: 19px;
+      border-radius: 50%;
+      background: var(--accent-mag);
+      border: 2px solid #fff;
+      cursor: pointer;
+      box-shadow: 0 0 8px rgba(56, 189, 248, 0.6);
+    }
+
+    #weightSlider::-webkit-slider-thumb {
+      -webkit-appearance: none;
+      width: 19px;
+      height: 19px;
+      border-radius: 50%;
+      background: var(--accent-weight);
+      border: 2px solid #fff;
+      cursor: pointer;
+      box-shadow: 0 0 8px rgba(168, 85, 247, 0.6);
+    }
+
+    .presets {
+      display: flex;
+      gap: 5px;
+      flex-wrap: wrap;
+      margin-top: 8px;
+    }
+
+    .preset-btn {
+      background: #0f172a;
+      color: var(--muted);
+      border: 1px solid var(--panel-border);
+      padding: 3px 7px;
+      border-radius: 6px;
+      font-size: 0.75rem;
+      cursor: pointer;
+      transition: all 0.15s;
+    }
+
+    .preset-btn:hover {
+      color: var(--text);
+      border-color: var(--accent-mag);
+    }
+
+    .btn-row {
+      display: flex;
+      gap: 12px;
+      flex-wrap: wrap;
+    }
+
+    .btn {
+      flex: 1;
+      min-width: 150px;
+      padding: 12px 18px;
+      border: none;
+      border-radius: 8px;
+      font-size: 0.95rem;
+      font-weight: 600;
+      cursor: pointer;
+      transition: transform 0.1s, background-color 0.2s;
+    }
+
+    .btn:active {
+      transform: scale(0.98);
+    }
+
+    .btn-primary {
+      background: #0284c7;
+      color: #fff;
+    }
+
+    .btn-primary:hover {
+      background: #0ea5e9;
+    }
+
+    .btn-primary.active {
+      background: var(--accent-red);
+    }
+
+    .btn-primary.active:hover {
+      background: #dc2626;
+    }
+
+    .btn-secondary {
+      background: #334155;
+      color: var(--text);
+    }
+
+    .btn-secondary:hover {
+      background: #475569;
+    }
+
+    /* Sidebar */
+    .sidebar {
+      display: flex;
+      flex-direction: column;
+      gap: 16px;
+    }
+
+    .timer-box {
+      background: #0b1120;
+      border: 1px solid var(--panel-border);
+      border-radius: 10px;
+      padding: 15px;
+      text-align: center;
+    }
+
+    .timer-label {
+      font-size: 0.8rem;
+      text-transform: uppercase;
+      letter-spacing: 0.08em;
+      color: var(--muted);
+      margin-bottom: 4px;
+    }
+
+    .timer-value {
+      font-family: 'Courier New', monospace;
+      font-size: 2.5rem;
+      font-weight: 700;
+      color: var(--text);
+    }
+
+    .timer-value.complete {
+      color: var(--accent-green);
+    }
+
+    .progress-section {
+      margin-top: 14px;
+    }
+
+    .progress-header {
+      display: flex;
+      justify-content: space-between;
+      font-size: 0.9rem;
+      margin-bottom: 6px;
+    }
+
+    .progress-track {
+      width: 100%;
+      height: 14px;
+      background: #0b1120;
+      border-radius: 999px;
+      overflow: hidden;
+      border: 1px solid var(--panel-border);
+    }
+
+    .progress-fill {
+      height: 100%;
+      width: 0%;
+      background: linear-gradient(90deg, #0284c7, #22c55e);
+      transition: width 0.08s ease-out;
+    }
+
+    .stats-grid {
+      display: grid;
+      grid-template-columns: 1fr 1fr;
+      gap: 10px;
+      margin-top: 14px;
+    }
+
+    .stat-item {
+      background: #0f172a;
+      border: 1px solid var(--panel-border);
+      border-radius: 8px;
+      padding: 10px 12px;
+    }
+
+    .stat-label {
+      font-size: 0.75rem;
+      color: var(--muted);
+    }
+
+    .stat-val {
+      font-family: 'Courier New', monospace;
+      font-size: 1.05rem;
+      font-weight: 700;
+      margin-top: 2px;
+    }
+
+    /* Log Table */
+    .log-header {
+      display: flex;
+      justify-content: space-between;
+      align-items: center;
+      margin-bottom: 10px;
+    }
+
+    .log-header h3 {
+      font-size: 0.95rem;
+    }
+
+    .clear-log {
+      background: none;
+      border: none;
+      color: var(--muted);
+      font-size: 0.8rem;
+      cursor: pointer;
+      text-decoration: underline;
+    }
+
+    .table-wrap {
+      max-height: 195px;
+      overflow-y: auto;
+      border: 1px solid var(--panel-border);
+      border-radius: 8px;
+    }
+
+    table {
+      width: 100%;
+      border-collapse: collapse;
+      font-size: 0.83rem;
+      text-align: left;
+    }
+
+    th, td {
+      padding: 7px 8px;
+      border-bottom: 1px solid var(--panel-border);
+    }
+
+    th {
+      background: #0f172a;
+      color: var(--muted);
+      font-weight: 600;
+      position: sticky;
+      top: 0;
+    }
+
+    .empty-log {
+      text-align: center;
+      color: var(--muted);
+      padding: 16px;
+      font-style: italic;
+    }
+
+    .hint-box {
+      font-size: 0.82rem;
+      color: var(--muted);
+      background: rgba(56, 189, 248, 0.08);
+      border-left: 3px solid var(--accent-mag);
+      padding: 10px 12px;
+      border-radius: 0 8px 8px 0;
+    }
+  </style>
+</head>
+<body>
+  <div class="container">
+    <header>
+      <h1>Magnetic Effect of Electric Current</h1>
+      <p>
+        Set coils, current, and paper clip weight, then drag the electromagnet across the plate to attract all clips.
+        <span class="formula-badge">F ∝ (N · I)² / d²</span>
+      </p>
+    </header>
+
+    <div class="grid">
+      <!-- Left Column: Canvas + Controls -->
+      <div class="card">
+        <div class="canvas-wrapper">
+          <canvas id="simCanvas" width="740" height="430"></canvas>
+          <div id="statusPill" class="status-pill">
+            <span class="status-dot"></span>
+            <span id="statusText">Power Off — 20 clips on plate</span>
+          </div>
+          <div id="dragTip" class="drag-tip">
+            Drag the electromagnet across the plate
+          </div>
+        </div>
+
+        <div class="controls">
+          <div class="sliders-grid">
+            <!-- Number of Coils -->
+            <div>
+              <div class="control-header">
+                <label for="coilSlider">Coils (N)</label>
+                <span class="readout-coil"><span id="coilDisplay">40</span> turns</span>
+              </div>
+              <input type="range" id="coilSlider" min="10" max="100" step="5" value="40" />
+              <div class="presets">
+                <button class="preset-btn coil-preset" data-val="10">10</button>
+                <button class="preset-btn coil-preset" data-val="25">25</button>
+                <button class="preset-btn coil-preset" data-val="50">50</button>
+                <button class="preset-btn coil-preset" data-val="75">75</button>
+                <button class="preset-btn coil-preset" data-val="100">100</button>
+              </div>
+            </div>
+
+            <!-- Size of Current -->
+            <div>
+              <div class="control-header">
+                <label for="currentSlider">Current (I)</label>
+                <span class="readout-curr"><span id="currentDisplay">2.5</span> A</span>
+              </div>
+              <input type="range" id="currentSlider" min="0" max="5" step="0.5" value="2.5" />
+              <div class="presets">
+                <button class="preset-btn curr-preset" data-val="0">0A</button>
+                <button class="preset-btn curr-preset" data-val="1">1A</button>
+                <button class="preset-btn curr-preset" data-val="2">2A</button>
+                <button class="preset-btn curr-preset" data-val="3">3A</button>
+                <button class="preset-btn curr-preset" data-val="4">4A</button>
+                <button class="preset-btn curr-preset" data-val="5">5A</button>
+              </div>
+            </div>
+
+            <!-- Paper Clip Weight -->
+            <div>
+              <div class="control-header">
+                <label for="weightSlider">Clip Weight</label>
+                <span class="readout-weight"><span id="weightDisplay">1.00</span>×</span>
+              </div>
+              <input type="range" id="weightSlider" min="0.5" max="3.0" step="0.25" value="1.0" />
+              <div class="presets">
+                <button class="preset-btn weight-preset" data-val="0.5">0.5× Light</button>
+                <button class="preset-btn weight-preset" data-val="1.0">1× Normal</button>
+                <button class="preset-btn weight-preset" data-val="2.0">2× Heavy</button>
+                <button class="preset-btn weight-preset" data-val="3.0">3×</button>
+              </div>
+            </div>
+          </div>
+
+          <div class="btn-row">
+            <button id="toggleBtn" class="btn btn-primary">Turn On Electromagnet</button>
+            <button id="resetBtn" class="btn btn-secondary">Reset Plate & Timer</button>
+          </div>
+        </div>
+      </div>
+
+      <!-- Right Column: Stopwatch, Telemetry & Log -->
+      <div class="sidebar">
+        <div class="card">
+          <div class="timer-box">
+            <div class="timer-label">Time to Attract All Clips</div>
+            <div id="timerDisplay" class="timer-value">00.00 s</div>
+          </div>
+
+          <div class="progress-section">
+            <div class="progress-header">
+              <span>Paper Clips Attracted</span>
+              <strong id="clipCountText" style="color: var(--accent-mag);">0 / 20</strong>
+            </div>
+            <div class="progress-track">
+              <div id="clipProgressBar" class="progress-fill"></div>
+            </div>
+          </div>
+
+          <div class="stats-grid">
+            <div class="stat-item">
+              <div class="stat-label">Ampere-Turns (N·I)</div>
+              <div id="statNI" class="stat-val" style="color: var(--accent-coil);">100 A·t</div>
+            </div>
+            <div class="stat-item">
+              <div class="stat-label">Effective Lift Radius</div>
+              <div id="statReach" class="stat-val" style="color: var(--accent-mag);">105 px</div>
+            </div>
+            <div class="stat-item">
+              <div class="stat-label">Est. Field Strength (B)</div>
+              <div id="statField" class="stat-val">15.0 mT</div>
+            </div>
+            <div class="stat-item">
+              <div class="stat-label">Clip Gravity (Weight)</div>
+              <div id="statWeight" class="stat-val" style="color: #c084fc;">1.00× (560)</div>
+            </div>
+          </div>
+        </div>
+
+        <div class="card">
+          <div class="log-header">
+            <h3>Experiment Results Log</h3>
+            <button id="clearLogBtn" class="clear-log">Clear Log</button>
+          </div>
+          <div class="table-wrap">
+            <table>
+              <thead>
+                <tr>
+                  <th>#</th>
+                  <th>Coils</th>
+                  <th>Current</th>
+                  <th>Weight</th>
+                  <th>Time</th>
+                </tr>
+              </thead>
+              <tbody id="logBody">
+                <tr>
+                  <td colspan="5" class="empty-log">Attract all 20 clips on the plate to record time.</td>
+                </tr>
+              </tbody>
+            </table>
+          </div>
+          <div class="hint-box" style="margin-top: 12px;">
+            <strong>Try comparing:</strong> At <strong>1.0× weight</strong> and <strong>40 coils</strong>, test <strong>1.5 A</strong> vs <strong>2.5 A</strong> vs <strong>4.0 A</strong>. Because magnetic pull scales with <em>(N·I)²</em>, doubling current quadruples the force and dramatically expands lift radius!
+          </div>
+        </div>
+      </div>
+    </div>
+  </div>
+
+  <script>
+    // --- Calibrated Physics Constants ---
+    const TOTAL_CLIPS = 20;
+    const BASE_GRAVITY = 560;     // Base downward acceleration (1.0x weight)
+    const MAG_SQ_CONST = 650;     // Tuned for F ∝ (N * I)^2 to maximize contrast across N & I
+    const D0_SQ = 625;            // Softening distance^2 (25^2)
+    const BENCH_Y = 378;
+
+    const PLATE = {
+      x: 465,
+      y: 350,
+      outerRx: 175,
+      innerRx: 136,
+      floorY: 358,
+      rimY: 342
+    };
+
+    // --- State ---
+    let numCoils = 40;
+    let current = 2.5;
+    let weightScale = 1.0;
+    let isPowerOn = false;
+    let isComplete = false;
+    let elapsedTime = 0;
+    let changedMidRun = false;
+    let startCoils = 40;
+    let startCurrent = 2.5;
+    let startWeight = 1.0;
+    let runCount = 0;
+    let lastTimestamp = null;
+    let animPhase = 0;
+
+    // Movable Electromagnet
+    const magnet = {
+      x: 465,
+      y: 140,
+      coreHalfW: 16,
+      coreHalfH: 62,
+      isDragging: false,
+      dragOffsetX: 0,
+      dragOffsetY: 0
+    };
+
+    const clips = [];
+
+    // --- DOM Elements ---
+    const canvas = document.getElementById('simCanvas');
+    const ctx = canvas.getContext('2d');
+    const coilSlider = document.getElementById('coilSlider');
+    const coilDisplay = document.getElementById('coilDisplay');
+    const currentSlider = document.getElementById('currentSlider');
+    const currentDisplay = document.getElementById('currentDisplay');
+    const weightSlider = document.getElementById('weightSlider');
+    const weightDisplay = document.getElementById('weightDisplay');
+    const toggleBtn = document.getElementById('toggleBtn');
+    const resetBtn = document.getElementById('resetBtn');
+    const timerDisplay = document.getElementById('timerDisplay');
+    const clipCountText = document.getElementById('clipCountText');
+    const clipProgressBar = document.getElementById('clipProgressBar');
+    const statNI = document.getElementById('statNI');
+    const statReach = document.getElementById('statReach');
+    const statField = document.getElementById('statField');
+    const statWeight = document.getElementById('statWeight');
+    const statusPill = document.getElementById('statusPill');
+    const statusText = document.getElementById('statusText');
+    const dragTip = document.getElementById('dragTip');
+    const logBody = document.getElementById('logBody');
+    const clearLogBtn = document.getElementById('clearLogBtn');
+
+    // --- Initialize Paper Clips ---
+    function initClips() {
+      clips.length = 0;
+      for (let i = 0; i < TOTAL_CLIPS; i++) {
+        const spread = ((i + 0.5) / TOTAL_CLIPS - 0.5) * 1.85;
+        const x = PLATE.x + spread * (PLATE.innerRx - 10) + (Math.random() - 0.5) * 12;
+        const depthOffset = (Math.random() - 0.5) * 16;
+        const y = PLATE.floorY + depthOffset;
+
+        clips.push({
+          x,
+          y,
+          vx: 0,
+          vy: 0,
+          angle: Math.PI / 2 + (Math.random() - 0.5) * 0.85,
+          vAngle: 0,
+          depthOffset,
+          attached: false,
+          onFloor: true,
+          attachDx: (Math.random() - 0.5) * 34,
+          attachDy: 4 + Math.random() * 26,
+          attachAngle: (Math.random() - 0.5) * 1.1
+        });
+      }
+    }
+
+    function getPolePosition() {
+      return { x: magnet.x, y: magnet.y + magnet.coreHalfH };
+    }
+
+    function getAttachedCount() {
+      let count = 0;
+      for (const c of clips) {
+        if (c.attached) count++;
+      }
+      return count;
+    }
+
+    function getLiftRadius(ni, effGravity) {
+      if (ni <= 0) return 0;
+      const val = (MAG_SQ_CONST * ni * ni) / effGravity - D0_SQ;
+      return val > 0 ? Math.sqrt(val) : 0;
+    }
+
+    // --- Pointer Dragging ---
+    function getCanvasCoords(e) {
+      const rect = canvas.getBoundingClientRect();
+      return {
+        x: (e.clientX - rect.left) * (canvas.width / rect.width),
+        y: (e.clientY - rect.top) * (canvas.height / rect.height)
+      };
+    }
+
+    function isPointOnMagnet(px, py) {
+      return Math.abs(px - magnet.x) <= 48 && Math.abs(py - magnet.y) <= 82;
+    }
+
+    canvas.addEventListener('pointerdown', (e) => {
+      const pt = getCanvasCoords(e);
+      if (isPointOnMagnet(pt.x, pt.y)) {
+        magnet.isDragging = true;
+        magnet.dragOffsetX = pt.x - magnet.x;
+        magnet.dragOffsetY = pt.y - magnet.y;
+        dragTip.style.display = 'none';
+        canvas.setPointerCapture(e.pointerId);
+        canvas.style.cursor = 'grabbing';
+      }
+    });
+
+    canvas.addEventListener('pointermove', (e) => {
+      const pt = getCanvasCoords(e);
+      if (magnet.isDragging) {
+        magnet.x = Math.max(215, Math.min(canvas.width - 55, pt.x - magnet.dragOffsetX));
+        magnet.y = Math.max(75, Math.min(296, pt.y - magnet.dragOffsetY));
+      } else {
+        canvas.style.cursor = isPointOnMagnet(pt.x, pt.y) ? 'grab' : 'default';
+      }
+    });
+
+    function stopDragging(e) {
+      if (magnet.isDragging) {
+        magnet.isDragging = false;
+        canvas.style.cursor = 'grab';
+        try { canvas.releasePointerCapture(e.pointerId); } catch {}
+      }
+    }
+
+    canvas.addEventListener('pointerup', stopDragging);
+    canvas.addEventListener('pointercancel', stopDragging);
+
+    // --- Controls ---
+    function setCoils(val) {
+      const v = parseInt(val, 10);
+      if ((isPowerOn || elapsedTime > 0) && !isComplete && v !== numCoils) {
+        changedMidRun = true;
+      }
+      numCoils = v;
+      coilSlider.value = v;
+      coilDisplay.textContent = v;
+      updateTelemetry();
+      updateUIState();
+    }
+
+    function setCurrent(val) {
+      const v = parseFloat(val);
+      if ((isPowerOn || elapsedTime > 0) && !isComplete && v !== current) {
+        changedMidRun = true;
+      }
+      current = v;
+      currentSlider.value = v;
+      currentDisplay.textContent = v.toFixed(1);
+      updateTelemetry();
+      updateUIState();
+    }
+
+    function setWeight(val) {
+      const v = parseFloat(val);
+      if ((isPowerOn || elapsedTime > 0) && !isComplete && v !== weightScale) {
+        changedMidRun = true;
+      }
+      weightScale = v;
+      weightSlider.value = v;
+      weightDisplay.textContent = v.toFixed(2);
+      updateTelemetry();
+      updateUIState();
+    }
+
+    coilSlider.addEventListener('input', (e) => setCoils(e.target.value));
+    currentSlider.addEventListener('input', (e) => setCurrent(e.target.value));
+    weightSlider.addEventListener('input', (e) => setWeight(e.target.value));
+
+    document.querySelectorAll('.coil-preset').forEach((b) =>
+      b.addEventListener('click', () => setCoils(b.dataset.val))
+    );
+    document.querySelectorAll('.curr-preset').forEach((b) =>
+      b.addEventListener('click', () => setCurrent(b.dataset.val))
+    );
+    document.querySelectorAll('.weight-preset').forEach((b) =>
+      b.addEventListener('click', () => setWeight(b.dataset.val))
+    );
+
+    toggleBtn.addEventListener('click', () => {
+      if (isPowerOn) {
+        isPowerOn = false;
+        dropAttachedClips();
+        if (isComplete) {
+          isComplete = false;
+          elapsedTime = 0;
+        }
+      } else {
+        if (isComplete) {
+          resetSimulation();
+        }
+        if (elapsedTime === 0) {
+          startCoils = numCoils;
+          startCurrent = current;
+          startWeight = weightScale;
+          changedMidRun = false;
+        }
+        isPowerOn = true;
+      }
+      updateUIState();
+      updateTelemetry();
+    });
+
+    function dropAttachedClips() {
+      for (const c of clips) {
+        if (c.attached) {
+          c.attached = false;
+          c.vx = (Math.random() - 0.5) * 55;
+          c.vy = 20;
+          c.vAngle = (Math.random() - 0.5) * 7;
+        }
+      }
+    }
+
+    resetBtn.addEventListener('click', resetSimulation);
+
+    clearLogBtn.addEventListener('click', () => {
+      runCount = 0;
+      logBody.innerHTML = '<tr><td colspan="5" class="empty-log">Attract all 20 clips on the plate to record time.</td></tr>';
+    });
+
+    function resetSimulation() {
+      isPowerOn = false;
+      isComplete = false;
+      elapsedTime = 0;
+      changedMidRun = false;
+      magnet.x = PLATE.x;
+      magnet.y = 140;
+      initClips();
+      updateTelemetry();
+      updateUIState();
+    }
+
+    function updateUIState() {
+      const attached = getAttachedCount();
+      const effGravity = BASE_GRAVITY * weightScale;
+      const ni = numCoils * current;
+      const liftR = getLiftRadius(ni, effGravity);
+
+      if (isComplete) {
+        toggleBtn.textContent = 'Turn Off (Drop Clips)';
+        toggleBtn.classList.add('active');
+        statusPill.className = 'status-pill done';
+        statusText.textContent = `All ${TOTAL_CLIPS} clips attracted in ${elapsedTime.toFixed(2)} s!`;
+        timerDisplay.classList.add('complete');
+      } else if (isPowerOn) {
+        toggleBtn.textContent = 'Turn Off (Drop Clips)';
+        toggleBtn.classList.add('active');
+        timerDisplay.classList.remove('complete');
+
+        if (current === 0) {
+          statusPill.className = 'status-pill warn';
+          statusText.textContent = 'Power On — 0.0 A (No Magnetic Field)';
+        } else if (liftR <= 0) {
+          statusPill.className = 'status-pill warn';
+          statusText.textContent = `Too weak for ${weightScale.toFixed(2)}× weight! Increase N or I`;
+        } else {
+          statusPill.className = 'status-pill running';
+          statusText.textContent = `Magnetized — ${attached}/${TOTAL_CLIPS} clips attracted`;
+        }
+      } else {
+        toggleBtn.textContent = 'Turn On Electromagnet';
+        toggleBtn.classList.remove('active');
+        statusPill.className = 'status-pill';
+        statusText.textContent = `Power Off — ${TOTAL_CLIPS - attached} clips on plate`;
+        timerDisplay.classList.remove('complete');
+      }
+    }
+
+    function updateTelemetry() {
+      const attached = getAttachedCount();
+      const ni = numCoils * current;
+      const effGravity = BASE_GRAVITY * weightScale;
+      const liftR = getLiftRadius(ni, effGravity);
+      const fieldMT = isPowerOn ? ni * 0.15 : 0;
+
+      timerDisplay.textContent = `${elapsedTime.toFixed(2).padStart(5, '0')} s`;
+      clipCountText.textContent = `${attached} / ${TOTAL_CLIPS}`;
+      clipProgressBar.style.width = `${(attached / TOTAL_CLIPS) * 100}%`;
+
+      statNI.textContent = `${ni.toFixed(0)} A·t`;
+      statReach.textContent = liftR > 0 ? `${Math.round(liftR)} px` : '0 px (Too weak)';
+      statField.textContent = `${fieldMT.toFixed(1)} mT`;
+      statWeight.textContent = `${weightScale.toFixed(2)}× (${Math.round(effGravity)})`;
+    }
+
+    function logRun() {
+      if (runCount === 0) logBody.innerHTML = '';
+      runCount++;
+      const row = document.createElement('tr');
+      const cLabel = changedMidRun ? 'Var' : `${startCoils}`;
+      const iLabel = changedMidRun ? 'Var' : `${startCurrent.toFixed(1)}A`;
+      const wLabel = changedMidRun ? 'Var' : `${startWeight.toFixed(2)}×`;
+
+      row.innerHTML = `
+        <td>${runCount}</td>
+        <td>${cLabel}</td>
+        <td>${iLabel}</td>
+        <td>${wLabel}</td>
+        <td><strong style="color: var(--accent-green);">${elapsedTime.toFixed(2)} s</strong></td>
+      `;
+      logBody.prepend(row);
+    }
+
+    // --- Physics Simulation Step ---
+    function step(timestamp) {
+      if (lastTimestamp === null) lastTimestamp = timestamp;
+      const dt = Math.min((timestamp - lastTimestamp) / 1000, 0.04);
+      lastTimestamp = timestamp;
+
+      const ni = isPowerOn ? numCoils * current : 0;
+      const effGravity = BASE_GRAVITY * weightScale;
+
+      // Thresholds scale proportionally with clip weight
+      const floorThreshold = 0.60 * effGravity;
+      const airThreshold = 0.15 * effGravity;
+      const attachThreshold = 0.85 * effGravity;
+
+      if (isPowerOn && current > 0) {
+        animPhase += dt * (2 + current * 2.5);
+      }
+
+      if (isPowerOn && !isComplete) {
+        elapsedTime += dt;
+      }
+
+      const pole = getPolePosition();
+      let newlyAttached = false;
+      let droppedByWeight = false;
+
+      // Check if magnet can still hold attached clips (if weight was increased mid-hold)
+      const holdAccelAtPole = (MAG_SQ_CONST * ni * ni) / (400 + D0_SQ);
+
+      for (const c of clips) {
+        if (c.attached) {
+          if (ni <= 0 || holdAccelAtPole < effGravity) {
+            c.attached = false;
+            c.vx = (Math.random() - 0.5) * 45;
+            c.vy = 25;
+            c.vAngle = (Math.random() - 0.5) * 6;
+            droppedByWeight = true;
+            continue;
+          }
+
+          const targetX = pole.x + c.attachDx;
+          const targetY = pole.y + c.attachDy;
+          c.x += (targetX - c.x) * Math.min(1, dt * 24);
+          c.y += (targetY - c.y) * Math.min(1, dt * 24);
+          c.angle += (c.attachAngle - c.angle) * Math.min(1, dt * 15);
+          continue;
+        }
+
+        let ax = 0;
+        let ay = effGravity;
+        let pulled = false;
+
+        if (ni > 0) {
+          const dx = pole.x - c.x;
+          const dy = pole.y - c.y;
+          const dist = Math.hypot(dx, dy);
+
+          // Force scales with (N * I)^2 / (d^2 + d0^2)
+          const aMag = (MAG_SQ_CONST * ni * ni) / (dist * dist + D0_SQ);
+          const threshold = c.onFloor ? floorThreshold : airThreshold;
+
+          if (aMag > threshold) {
+            const ux = dx / (dist || 1);
+            const uy = dy / (dist || 1);
+            ax += ux * aMag;
+            ay += uy * aMag;
+            pulled = true;
+
+            const desiredAngle = Math.atan2(dy, dx) + Math.PI / 2;
+            c.angle += (desiredAngle - c.angle) * Math.min(1, dt * 6);
+          }
+
+          if (dist < 28 && aMag > attachThreshold) {
+            c.attached = true;
+            c.onFloor = false;
+            c.vx = 0;
+            c.vy = 0;
+            newlyAttached = true;
+            continue;
+          }
+        }
+
+        c.vx += ax * dt;
+        c.vy += ay * dt;
+
+        // Stronger damping while being pulled makes weak vs strong attraction speed visibly distinct
+        if (pulled) {
+          c.vx *= Math.pow(0.10, dt);
+          c.vy *= Math.pow(0.14, dt);
+        } else {
+          c.vx *= Math.pow(0.35, dt);
+          c.vy *= Math.pow(0.55, dt);
+        }
+
+        c.x += c.vx * dt;
+        c.y += c.vy * dt;
+        c.angle += c.vAngle * dt;
+        c.vAngle *= Math.pow(0.1, dt);
+
+        // Shallow plate surface collision
+        c.onFloor = false;
+        const dxPlate = c.x - PLATE.x;
+        const absDx = Math.abs(dxPlate);
+        let surfaceY = BENCH_Y - 4;
+
+        if (absDx < PLATE.outerRx) {
+          if (absDx <= PLATE.innerRx) {
+            surfaceY = PLATE.floorY + c.depthOffset;
+          } else {
+            const rimT = (absDx - PLATE.innerRx) / (PLATE.outerRx - PLATE.innerRx);
+            surfaceY = PLATE.floorY + c.depthOffset * (1 - rimT) - (PLATE.floorY - PLATE.rimY) * rimT;
+            if (c.y >= surfaceY - 2 && !pulled) {
+              c.vx -= Math.sign(dxPlate) * 180 * dt;
+            }
+          }
+        }
+
+        if (c.y >= surfaceY) {
+          c.y = surfaceY;
+          if (c.vy > 0) {
+            c.vy = -c.vy * 0.2;
+          }
+          c.vx *= 0.76;
+          c.vAngle *= 0.55;
+
+          if (!pulled && Math.abs(c.vy) < 25) {
+            c.onFloor = true;
+          }
+        }
+
+        c.x = Math.max(210, Math.min(canvas.width - 20, c.x));
+        c.y = Math.max(25, Math.min(BENCH_Y - 4, c.y));
+      }
+
+      if (isPowerOn && !isComplete && getAttachedCount() === TOTAL_CLIPS) {
+        isComplete = true;
+        logRun();
+        updateUIState();
+      } else if (newlyAttached || droppedByWeight) {
+        updateUIState();
+      }
+
+      if (isPowerOn || newlyAttached || droppedByWeight) {
+        updateTelemetry();
+      }
+
+      drawScene(ni, effGravity);
+      requestAnimationFrame(step);
+    }
+
+    // --- Canvas Rendering ---
+    function drawScene(ni, effGravity) {
+      ctx.clearRect(0, 0, canvas.width, canvas.height);
+
+      // Lab bench
+      ctx.fillStyle = '#162032';
+      ctx.fillRect(0, BENCH_Y, canvas.width, canvas.height - BENCH_Y);
+      ctx.strokeStyle = '#334155';
+      ctx.lineWidth = 2;
+      ctx.beginPath();
+      ctx.moveTo(0, BENCH_Y);
+      ctx.lineTo(canvas.width, BENCH_Y);
+      ctx.stroke();
+
+      drawPowerSupply();
+      drawWires(ni);
+      drawPlate();
+      drawClips();
+      drawMagneticFieldLines(ni, effGravity);
+      drawElectromagnet(ni);
+    }
+
+    function drawPowerSupply() {
+      ctx.save();
+      ctx.fillStyle = '#1e293b';
+      ctx.strokeStyle = '#64748b';
+      ctx.lineWidth = 2;
+      ctx.beginPath();
+      ctx.roundRect(24, 240, 148, 138, 10);
+      ctx.fill();
+      ctx.stroke();
+
+      ctx.fillStyle = '#94a3b8';
+      ctx.font = 'bold 11px sans-serif';
+      ctx.textAlign = 'center';
+      ctx.fillText('DC POWER SUPPLY', 98, 260);
+
+      ctx.fillStyle = '#090d16';
+      ctx.strokeStyle = '#334155';
+      ctx.lineWidth = 1.5;
+      ctx.beginPath();
+      ctx.roundRect(38, 270, 120, 42, 6);
+      ctx.fill();
+      ctx.stroke();
+
+      ctx.fillStyle = isPowerOn ? '#38bdf8' : '#475569';
+      ctx.font = 'bold 19px "Courier New", monospace';
+      ctx.fillText(isPowerOn ? `${current.toFixed(1)} A` : 'OFF', 98, 297);
+
+      ctx.fillStyle = isPowerOn ? '#22c55e' : '#ef4444';
+      ctx.beginPath();
+      ctx.arc(48, 342, 6, 0, Math.PI * 2);
+      ctx.fill();
+
+      ctx.fillStyle = '#cbd5e1';
+      ctx.font = '11px sans-serif';
+      ctx.textAlign = 'left';
+      ctx.fillText(isPowerOn ? 'ACTIVE' : 'STANDBY', 60, 346);
+
+      ctx.fillStyle = '#ef4444';
+      ctx.beginPath();
+      ctx.arc(166, 266, 7, 0, Math.PI * 2);
+      ctx.fill();
+
+      ctx.fillStyle = '#0f172a';
+      ctx.strokeStyle = '#94a3b8';
+      ctx.lineWidth = 2;
+      ctx.beginPath();
+      ctx.arc(166, 304, 7, 0, Math.PI * 2);
+      ctx.fill();
+      ctx.stroke();
+
+      ctx.restore();
+    }
+
+    function drawWires(ni) {
+      const topLeadX = magnet.x - 16;
+      const topLeadY = magnet.y - 38;
+      const botLeadX = magnet.x - 16;
+      const botLeadY = magnet.y + 38;
+
+      ctx.save();
+      ctx.lineCap = 'round';
+
+      ctx.strokeStyle = '#ef4444';
+      ctx.lineWidth = 3.5;
+      ctx.beginPath();
+      ctx.moveTo(172, 266);
+      ctx.bezierCurveTo(215, 220, Math.max(190, magnet.x - 130), 70, topLeadX, topLeadY);
+      ctx.stroke();
+
+      ctx.strokeStyle = '#64748b';
+      ctx.lineWidth = 3.5;
+      ctx.beginPath();
+      ctx.moveTo(172, 304);
+      ctx.bezierCurveTo(220, 315, Math.max(195, magnet.x - 120), 190, botLeadX, botLeadY);
+      ctx.stroke();
+
+      if (ni > 0) {
+        const dotCount = 5;
+        for (let i = 0; i < dotCount; i++) {
+          const t = ((animPhase * 0.25 + i / dotCount) % 1);
+          const pt = cubicBezierPoint(
+            { x: 172, y: 266 },
+            { x: 215, y: 220 },
+            { x: Math.max(190, magnet.x - 130), y: 70 },
+            { x: topLeadX, y: topLeadY },
+            t
+          );
+          ctx.fillStyle = '#fde047';
+          ctx.beginPath();
+          ctx.arc(pt.x, pt.y, 3.2, 0, Math.PI * 2);
+          ctx.fill();
+        }
+      }
+
+      ctx.restore();
+    }
+
+    function cubicBezierPoint(p0, p1, p2, p3, t) {
+      const u = 1 - t;
+      return {
+        x: u * u * u * p0.x + 3 * u * u * t * p1.x + 3 * u * t * t * p2.x + t * t * t * p3.x,
+        y: u * u * u * p0.y + 3 * u * u * t * p1.y + 3 * u * t * t * p2.y + t * t * t * p3.y
+      };
+    }
+
+    function drawPlate() {
+      ctx.save();
+
+      ctx.fillStyle = 'rgba(0, 0, 0, 0.45)';
+      ctx.beginPath();
+      ctx.ellipse(PLATE.x, BENCH_Y + 1, 130, 7, 0, 0, Math.PI * 2);
+      ctx.fill();
+
+      const underGrad = ctx.createLinearGradient(PLATE.x, PLATE.y, PLATE.x, BENCH_Y);
+      underGrad.addColorStop(0, '#334155');
+      underGrad.addColorStop(1, '#1e293b');
+      ctx.fillStyle = underGrad;
+      ctx.strokeStyle = '#475569';
+      ctx.lineWidth = 2;
+
+      ctx.beginPath();
+      ctx.moveTo(PLATE.x - PLATE.outerRx, PLATE.y);
+      ctx.quadraticCurveTo(PLATE.x - PLATE.outerRx + 28, BENCH_Y - 2, PLATE.x - 115, BENCH_Y);
+      ctx.lineTo(PLATE.x + 115, BENCH_Y);
+      ctx.quadraticCurveTo(PLATE.x + PLATE.outerRx - 28, BENCH_Y - 2, PLATE.x + PLATE.outerRx, PLATE.y);
+      ctx.closePath();
+      ctx.fill();
+      ctx.stroke();
+
+      const rimGrad = ctx.createLinearGradient(PLATE.x - PLATE.outerRx, PLATE.y, PLATE.x + PLATE.outerRx, PLATE.y);
+      rimGrad.addColorStop(0, '#475569');
+      rimGrad.addColorStop(0.5, '#64748b');
+      rimGrad.addColorStop(1, '#334155');
+
+      ctx.fillStyle = rimGrad;
+      ctx.strokeStyle = '#94a3b8';
+      ctx.lineWidth = 2;
+      ctx.beginPath();
+      ctx.ellipse(PLATE.x, PLATE.y, PLATE.outerRx, 23, 0, 0, Math.PI * 2);
+      ctx.fill();
+      ctx.stroke();
+
+      const innerGrad = ctx.createRadialGradient(PLATE.x, PLATE.y + 4, 20, PLATE.x, PLATE.y + 4, PLATE.innerRx);
+      innerGrad.addColorStop(0, '#1e3a5f');
+      innerGrad.addColorStop(0.75, '#172a45');
+      innerGrad.addColorStop(1, '#0f1f36');
+
+      ctx.fillStyle = innerGrad;
+      ctx.strokeStyle = 'rgba(148, 163, 184, 0.35)';
+      ctx.lineWidth = 1.5;
+      ctx.beginPath();
+      ctx.ellipse(PLATE.x, PLATE.y + 4, PLATE.innerRx, 15, 0, 0, Math.PI * 2);
+      ctx.fill();
+      ctx.stroke();
+
+      ctx.restore();
+    }
+
+    function drawMagneticFieldLines(ni, effGravity) {
+      if (ni <= 0) return;
+
+      const strength = Math.min(1, ni / 500);
+      const scale = 0.25 + strength * 1.1;
+      const liftR = getLiftRadius(ni, effGravity);
+
+      ctx.save();
+      ctx.translate(magnet.x, magnet.y);
+
+      const numLoops = 3;
+      for (let i = 1; i <= numLoops; i++) {
+        const rx = (22 + i * 34) * scale;
+        const ry = (54 + i * 26) * scale;
+        const alpha = (0.45 - i * 0.1) * (0.3 + strength * 0.7);
+
+        ctx.strokeStyle = `rgba(56, 189, 248, ${alpha})`;
+        ctx.lineWidth = 1.6;
+        ctx.setLineDash([6, 5]);
+        ctx.lineDashOffset = -animPhase * 12;
+
+        ctx.beginPath();
+        ctx.ellipse(-rx * 0.55, 0, rx * 0.65, ry, 0, 0, Math.PI * 2);
+        ctx.stroke();
+
+        ctx.beginPath();
+        ctx.ellipse(rx * 0.55, 0, rx * 0.65, ry, 0, 0, Math.PI * 2);
+        ctx.stroke();
+      }
+
+      // Faint dashed circle around the pole tip showing actual effective lift radius for current weight
+      if (liftR > 8) {
+        ctx.setLineDash([4, 6]);
+        ctx.lineDashOffset = 0;
+        ctx.strokeStyle = 'rgba(56, 189, 248, 0.22)';
+        ctx.lineWidth = 1.2;
+        ctx.beginPath();
+        ctx.arc(0, magnet.coreHalfH, Math.min(360, liftR), 0, Math.PI * 2);
+        ctx.stroke();
+      }
+
+      const grad = ctx.createRadialGradient(0, magnet.coreHalfH, 4, 0, magnet.coreHalfH, 75 * scale);
+      grad.addColorStop(0, `rgba(56, 189, 248, ${0.35 * (0.25 + strength * 0.75)})`);
+      grad.addColorStop(1, 'rgba(56, 189, 248, 0)');
+      ctx.fillStyle = grad;
+      ctx.beginPath();
+      ctx.arc(0, magnet.coreHalfH, 75 * scale, 0, Math.PI * 2);
+      ctx.fill();
+
+      ctx.restore();
+    }
+
+    function drawElectromagnet(ni) {
+      ctx.save();
+      ctx.translate(magnet.x, magnet.y);
+
+      ctx.shadowColor = 'rgba(0, 0, 0, 0.45)';
+      ctx.shadowBlur = magnet.isDragging ? 18 : 10;
+      ctx.shadowOffsetX = 4;
+      ctx.shadowOffsetY = 8;
+
+      const coreGrad = ctx.createLinearGradient(-14, 0, 14, 0);
+      coreGrad.addColorStop(0, '#64748b');
+      coreGrad.addColorStop(0.4, '#cbd5e1');
+      coreGrad.addColorStop(1, '#475569');
+
+      ctx.fillStyle = coreGrad;
+      ctx.strokeStyle = magnet.isDragging ? '#38bdf8' : '#334155';
+      ctx.lineWidth = 1.8;
+
+      ctx.beginPath();
+      ctx.roundRect(-24, -magnet.coreHalfH - 8, 48, 12, 4);
+      ctx.fill();
+      ctx.stroke();
+
+      ctx.beginPath();
+      ctx.moveTo(-14, -magnet.coreHalfH + 4);
+      ctx.lineTo(14, -magnet.coreHalfH + 4);
+      ctx.lineTo(14, magnet.coreHalfH - 12);
+      ctx.lineTo(7, magnet.coreHalfH);
+      ctx.lineTo(-7, magnet.coreHalfH);
+      ctx.lineTo(-14, magnet.coreHalfH - 12);
+      ctx.closePath();
+      ctx.fill();
+      ctx.stroke();
+
+      ctx.shadowColor = 'transparent';
+
+      const visualTurns = Math.max(5, Math.round(numCoils / 3.2));
+      const coilTop = -38;
+      const coilBottom = 38;
+      const stepY = (coilBottom - coilTop) / visualTurns;
+
+      for (let i = 0; i < visualTurns; i++) {
+        const y = coilTop + i * stepY;
+        const wireGrad = ctx.createLinearGradient(-18, y, 18, y);
+        wireGrad.addColorStop(0, '#92400e');
+        wireGrad.addColorStop(0.45, '#fbbf24');
+        wireGrad.addColorStop(1, '#b45309');
+
+        ctx.strokeStyle = wireGrad;
+        ctx.lineWidth = Math.max(2.2, Math.min(5.2, stepY * 0.85));
+        ctx.lineCap = 'round';
+
+        ctx.beginPath();
+        ctx.moveTo(-17, y);
+        ctx.quadraticCurveTo(0, y + stepY * 0.35, 17, y + stepY * 0.15);
+        ctx.stroke();
+      }
+
+      if (ni > 0) {
+        ctx.font = 'bold 12px sans-serif';
+        ctx.textAlign = 'center';
+        ctx.fillStyle = '#f87171';
+        ctx.fillText('N', 0, -magnet.coreHalfH - 13);
+        ctx.fillStyle = '#38bdf8';
+        ctx.fillText('S', 0, magnet.coreHalfH - 18);
+      }
+
+      ctx.restore();
+    }
+
+    function drawClips() {
+      for (const c of clips) {
+        drawSinglePaperClip(c.x, c.y, c.angle, c.attached);
+      }
+    }
+
+    function drawSinglePaperClip(x, y, angle, isAttached) {
+      // Visual thickness and size reflect the selected weight
+      const sizeScale = 0.92 + (weightScale - 1.0) * 0.12;
+      const thickness = 1.6 + weightScale * 0.55;
+
+      ctx.save();
+      ctx.translate(x, y);
+      ctx.rotate(angle);
+      ctx.scale(sizeScale, sizeScale);
+
+      ctx.strokeStyle = isAttached ? '#f8fafc' : '#e2e8f0';
+      ctx.lineWidth = thickness;
+      ctx.lineCap = 'round';
+      ctx.lineJoin = 'round';
+
+      ctx.beginPath();
+      ctx.moveTo(-2.5, -7);
+      ctx.lineTo(-2.5, 6);
+      ctx.arc(0, 6, 2.5, Math.PI, 0, true);
+      ctx.lineTo(2.5, -8);
+      ctx.arc(-0.8, -8, 3.3, 0, Math.PI, true);
+      ctx.lineTo(-4.1, 7);
+      ctx.arc(0, 7, 4.1, Math.PI, 0, true);
+      ctx.lineTo(4.1, -3);
+      ctx.stroke();
+
+      ctx.restore();
+    }
+
+    // --- Boot ---
+    initClips();
+    updateTelemetry();
+    updateUIState();
+    requestAnimationFrame(step);
+  </script>
+</body>
+</html>
