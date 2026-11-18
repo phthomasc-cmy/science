@@ -1,0 +1,912 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <title>Water Pipe Analogy: Voltage, Current & Resistance</title>
+  <style>
+    :root {
+      --bg: #f0f6fb;
+      --surface: #ffffff;
+      --surface-alt: #f8fafc;
+      --border: #cbd5e1;
+      --text: #0f172a;
+      --muted: #475569;
+      --voltage: #dc2626;
+      --voltage-bg: #fee2e2;
+      --current: #0284c7;
+      --current-bg: #e0f2fe;
+      --resistance: #d97706;
+      --resistance-bg: #fef3c7;
+      --voltmeter: #7c3aed;
+      --voltmeter-bg: #ede9fe;
+      --radius: 14px;
+      --shadow: 0 6px 20px rgba(15, 23, 42, 0.06);
+    }
+
+    * { box-sizing: border-box; }
+
+    body {
+      margin: 0;
+      font-family: system-ui, -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, sans-serif;
+      background: var(--bg);
+      color: var(--text);
+      line-height: 1.5;
+    }
+
+    header {
+      background: var(--surface);
+      border-bottom: 1px solid var(--border);
+      padding: 14px 24px;
+      display: flex;
+      flex-wrap: wrap;
+      align-items: center;
+      justify-content: space-between;
+      gap: 12px;
+    }
+
+    .brand {
+      display: flex;
+      align-items: center;
+      gap: 12px;
+    }
+
+    .brand-badge {
+      width: 42px;
+      height: 42px;
+      border-radius: 10px;
+      background: linear-gradient(135deg, #0284c7, #2563eb);
+      color: white;
+      display: grid;
+      place-items: center;
+      font-weight: 800;
+      font-size: 15px;
+    }
+
+    .brand h1 { margin: 0; font-size: 1.15rem; }
+    .brand p { margin: 0; font-size: 0.85rem; color: var(--muted); }
+
+    .mode-pills {
+      display: flex;
+      flex-wrap: wrap;
+      gap: 6px;
+      background: var(--bg);
+      padding: 4px;
+      border-radius: 10px;
+    }
+
+    .mode-btn {
+      border: none;
+      background: transparent;
+      padding: 7px 12px;
+      border-radius: 8px;
+      font-size: 0.84rem;
+      font-weight: 700;
+      color: var(--muted);
+      cursor: pointer;
+      transition: all 0.15s ease;
+    }
+
+    .mode-btn.active {
+      background: var(--surface);
+      color: #0284c7;
+      box-shadow: 0 1px 4px rgba(0,0,0,0.08);
+    }
+
+    .mode-btn.danger.active {
+      color: var(--voltage);
+    }
+
+    main {
+      max-width: 1200px;
+      margin: 20px auto;
+      padding: 0 16px 32px;
+      display: grid;
+      grid-template-columns: 1.45fr 1fr;
+      gap: 20px;
+      align-items: start;
+    }
+
+    @media (max-width: 960px) {
+      main { grid-template-columns: 1fr; }
+    }
+
+    .card {
+      background: var(--surface);
+      border: 1px solid var(--border);
+      border-radius: var(--radius);
+      box-shadow: var(--shadow);
+      padding: 18px;
+    }
+
+    .card-title {
+      margin: 0 0 12px;
+      font-size: 1rem;
+      font-weight: 800;
+      display: flex;
+      justify-content: space-between;
+      align-items: center;
+      flex-wrap: wrap;
+      gap: 8px;
+    }
+
+    .svg-box {
+      border: 1px solid var(--border);
+      border-radius: 12px;
+      overflow: hidden;
+      background: #ffffff;
+      position: relative;
+    }
+
+    .svg-box.warning-border {
+      border-color: var(--voltage);
+      box-shadow: 0 0 0 3px rgba(220, 38, 38, 0.15);
+    }
+
+    svg { display: block; width: 100%; height: auto; }
+
+    /* Sliders */
+    .sliders-grid {
+      margin-top: 14px;
+      display: grid;
+      grid-template-columns: 1fr 1fr;
+      gap: 14px;
+    }
+
+    @media (max-width: 600px) {
+      .sliders-grid { grid-template-columns: 1fr; }
+    }
+
+    .slider-card {
+      padding: 12px 14px;
+      border-radius: 10px;
+      border: 1px solid var(--border);
+      background: var(--surface-alt);
+    }
+
+    .slider-card.v { border-left: 4px solid var(--voltage); }
+    .slider-card.r { border-left: 4px solid var(--resistance); }
+
+    .slider-header {
+      display: flex;
+      justify-content: space-between;
+      align-items: baseline;
+      margin-bottom: 6px;
+    }
+
+    .slider-title { font-weight: 800; font-size: 0.9rem; }
+    .slider-sub { font-size: 0.78rem; color: var(--muted); }
+    .slider-val {
+      font-family: ui-monospace, monospace;
+      font-weight: 800;
+      font-size: 1.05rem;
+    }
+
+    input[type="range"] {
+      width: 100%;
+      cursor: pointer;
+    }
+
+    input[type="range"].v-range { accent-color: var(--voltage); }
+    input[type="range"].r-range { accent-color: var(--resistance); }
+
+    /* Quick Experiment Buttons */
+    .experiments {
+      margin-top: 12px;
+      display: flex;
+      flex-wrap: wrap;
+      gap: 8px;
+      align-items: center;
+    }
+
+    .exp-label {
+      font-size: 0.8rem;
+      font-weight: 700;
+      color: var(--muted);
+    }
+
+    .exp-btn {
+      border: 1px solid var(--border);
+      background: white;
+      border-radius: 999px;
+      padding: 5px 11px;
+      font-size: 0.78rem;
+      font-weight: 600;
+      cursor: pointer;
+      color: var(--text);
+      transition: background 0.15s;
+    }
+
+    .exp-btn:hover { background: var(--bg); border-color: #94a3b8; }
+
+    /* Right Side Stack */
+    .side-stack {
+      display: flex;
+      flex-direction: column;
+      gap: 16px;
+    }
+
+    /* Formula Card */
+    .formula-box {
+      display: grid;
+      grid-template-columns: 1fr auto 1fr auto 1fr;
+      align-items: center;
+      text-align: center;
+      gap: 6px;
+      background: var(--surface-alt);
+      border: 1px solid var(--border);
+      border-radius: 10px;
+      padding: 12px 8px;
+    }
+
+    .f-item {
+      padding: 6px 4px;
+      border-radius: 8px;
+    }
+
+    .f-item.i { background: var(--current-bg); color: #0369a1; }
+    .f-item.v { background: var(--voltage-bg); color: #b91c1c; }
+    .f-item.r { background: var(--resistance-bg); color: #b45309; }
+
+    .f-num {
+      font-family: ui-monospace, monospace;
+      font-size: 1.2rem;
+      font-weight: 800;
+    }
+
+    .f-label {
+      font-size: 0.72rem;
+      font-weight: 700;
+    }
+
+    .f-op {
+      font-size: 1.2rem;
+      font-weight: 800;
+      color: var(--muted);
+    }
+
+    /* Analogy Table */
+    .analogy-list {
+      display: flex;
+      flex-direction: column;
+      gap: 10px;
+    }
+
+    .analogy-row {
+      display: grid;
+      grid-template-columns: 36px 1fr;
+      gap: 10px;
+      align-items: start;
+      padding: 10px;
+      border-radius: 10px;
+      border: 1px solid var(--border);
+      background: var(--surface-alt);
+    }
+
+    .a-icon {
+      width: 36px;
+      height: 36px;
+      border-radius: 8px;
+      display: grid;
+      place-items: center;
+      font-weight: 800;
+      font-size: 0.95rem;
+    }
+
+    .a-icon.v { background: var(--voltage-bg); color: var(--voltage); }
+    .a-icon.i { background: var(--current-bg); color: var(--current); }
+    .a-icon.r { background: var(--resistance-bg); color: var(--resistance); }
+
+    .a-title { font-weight: 800; font-size: 0.88rem; }
+    .a-desc { font-size: 0.82rem; color: var(--muted); margin-top: 2px; }
+
+    /* Live Status Banner */
+    .feedback-box {
+      padding: 12px 14px;
+      border-radius: 10px;
+      border: 1px solid var(--border);
+      background: #eff6ff;
+      color: #1e3a8a;
+      font-size: 0.86rem;
+    }
+
+    .feedback-box.warn {
+      background: var(--resistance-bg);
+      border-color: #fcd34d;
+      color: #78350f;
+    }
+
+    .feedback-box.danger {
+      background: var(--voltage-bg);
+      border-color: #fca5a5;
+      color: #7f1d1d;
+    }
+
+    .feedback-box strong { display: block; margin-bottom: 3px; font-size: 0.92rem; }
+
+    /* Mini Synced Electrical Diagram */
+    .mini-circuit {
+      display: flex;
+      align-items: center;
+      justify-content: space-between;
+      gap: 12px;
+      background: var(--surface-alt);
+      border: 1px solid var(--border);
+      border-radius: 10px;
+      padding: 10px 12px;
+    }
+  </style>
+</head>
+<body>
+
+<header>
+  <div class="brand">
+    <div class="brand-badge">V=IR</div>
+    <div>
+      <h1>Water Pipe Analogy: Voltage, Current & Resistance</h1>
+      <p>See how water pressure, flow rate, and pipe size match electric circuits</p>
+    </div>
+  </div>
+  <div class="mode-pills" id="modePills">
+    <button class="mode-btn active" data-mode="normal">Normal Meters</button>
+    <button class="mode-btn danger" data-mode="voltmeter_series">Mistake: Voltmeter in Pipe</button>
+    <button class="mode-btn danger" data-mode="ammeter_parallel">Mistake: Ammeter Bypass</button>
+  </div>
+</header>
+
+<main>
+  <!-- Left Column: Interactive Water Pipe SVG + Controls -->
+  <div class="card">
+    <div class="card-title">
+      <span>Interactive Water Loop</span>
+      <span style="font-size: 0.8rem; font-weight: 600; color: var(--muted);">
+        <span style="color:#0284c7;">● High Pressure</span> &nbsp;
+        <span style="color:#64748b;">○ Low Pressure</span>
+      </span>
+    </div>
+
+    <div class="svg-box" id="svgBox">
+      <svg viewBox="0 0 700 400" id="waterSvg" aria-label="Water pipe analogy diagram">
+        <defs>
+          <radialGradient id="turbineGlow" cx="50%" cy="50%" r="50%">
+            <stop offset="0%" stop-color="#fde047" stop-opacity="0.85" />
+            <stop offset="100%" stop-color="#fde047" stop-opacity="0" />
+          </radialGradient>
+        </defs>
+
+        <rect width="700" height="400" fill="#ffffff" />
+
+        <!-- Pipe Outer Casing (Main Loop) -->
+        <path d="M 100 200 L 100 90 L 500 90 L 500 310 L 100 310 Z"
+              fill="none" stroke="#334155" stroke-width="38" stroke-linejoin="round" />
+
+        <!-- Bypass / Voltmeter Branch Outer Casing -->
+        <!-- Shown dynamically depending on mode -->
+        <g id="parallelPipeGroup">
+          <path d="M 500 125 L 620 125 L 620 275 L 500 275"
+                fill="none" stroke="#334155" stroke-width="14" stroke-linejoin="round" id="parallelOuter" />
+          <path d="M 500 125 L 620 125 L 620 275 L 500 275"
+                fill="none" stroke="#e0f2fe" stroke-width="8" stroke-linejoin="round" id="parallelInner" />
+        </g>
+
+        <!-- Water Color Fill: High Pressure Side (Pump -> Top -> before Squeeze) -->
+        <path id="highPressurePipe"
+              d="M 100 200 L 100 90 L 500 90 L 500 165"
+              fill="none" stroke="#38bdf8" stroke-width="28" stroke-linejoin="round" />
+
+        <!-- Water Color Fill: Low Pressure Side (after Squeeze -> Bottom -> Pump) -->
+        <path id="lowPressurePipe"
+              d="M 500 235 L 500 310 L 100 310 L 100 200"
+              fill="none" stroke="#e0f2fe" stroke-width="28" stroke-linejoin="round" />
+
+        <!-- Squeeze Channel Water (between y=165 and y=235 at x=500) -->
+        <rect id="squeezeWater" x="486" y="165" width="28" height="70" fill="#7dd3fc" />
+
+        <!-- Pipe Clamp / Restriction Jaws (Resistance) -->
+        <g id="squeezeJaws">
+          <!-- Left jaw -->
+          <path id="jawLeft" d="M 478 165 L 494 185 L 494 215 L 478 235 Z" fill="#f59e0b" stroke="#b45309" stroke-width="2" />
+          <!-- Right jaw -->
+          <path id="jawRight" d="M 522 165 L 506 185 L 506 215 L 522 235 Z" fill="#f59e0b" stroke="#b45309" stroke-width="2" />
+        </g>
+
+        <!-- Hidden SVG centerlines used by JS for droplet motion -->
+        <path id="mainLoopPath" d="M 100 200 L 100 90 L 500 90 L 500 310 L 100 310 Z" fill="none" stroke="none" />
+        <path id="bypassLoopPath" d="M 100 200 L 100 90 L 500 90 L 500 125 L 620 125 L 620 275 L 500 275 L 500 310 L 100 310 Z" fill="none" stroke="none" />
+
+        <!-- Animated Water Droplets Container -->
+        <g id="dropletsLayer"></g>
+
+        <!-- Resistance Label + Work Indicator (like a glowing bulb/turbine) -->
+        <g id="resistanceLabelGroup">
+          <circle id="workGlow" cx="500" cy="200" r="46" fill="url(#turbineGlow)" opacity="0" />
+          <text x="456" y="195" text-anchor="end" font-size="13" font-weight="800" fill="#b45309">Narrow Pipe</text>
+          <text x="456" y="211" text-anchor="end" font-size="11" font-weight="700" fill="#475569" id="svgResLabel">= Resistance (6 Ω)</text>
+        </g>
+
+        <!-- Water Pump (Voltage) on Left at (100, 200) -->
+        <g id="pumpGroup">
+          <circle cx="100" cy="200" r="38" fill="#ffffff" stroke="#dc2626" stroke-width="4" />
+          <g id="pumpImpeller" transform="translate(100, 200)">
+            <line x1="-22" y1="0" x2="22" y2="0" stroke="#dc2626" stroke-width="5" stroke-linecap="round" />
+            <line x1="0" y1="-22" x2="0" y2="22" stroke="#dc2626" stroke-width="5" stroke-linecap="round" />
+            <circle cx="0" cy="0" r="7" fill="#dc2626" />
+          </g>
+          <!-- Upward push arrow -->
+          <path d="M 100 148 L 100 124 M 92 133 L 100 122 L 108 133" fill="none" stroke="#ffffff" stroke-width="3.5" stroke-linecap="round" stroke-linejoin="round" />
+          <text x="100" y="256" text-anchor="middle" font-size="13" font-weight="800" fill="#b91c1c">Water Pump</text>
+          <text x="100" y="272" text-anchor="middle" font-size="11" font-weight="700" fill="#475569" id="svgVoltLabel">= Voltage (6 V)</text>
+        </g>
+
+        <!-- Top Pipe Slot (x=300, y=90): Normal = Flow Wheel (Ammeter), Mistake = Voltmeter Plug -->
+        <g id="topSlotGroup">
+          <!-- Flow Wheel (Ammeter) -->
+          <g id="seriesAmmeter">
+            <circle cx="300" cy="90" r="28" fill="#e0f2fe" stroke="#0284c7" stroke-width="3.5" />
+            <g id="ammeterWheel" transform="translate(300, 90)">
+              <line x1="-18" y1="0" x2="18" y2="0" stroke="#0284c7" stroke-width="3.5" stroke-linecap="round" />
+              <line x1="0" y1="-18" x2="0" y2="18" stroke="#0284c7" stroke-width="3.5" stroke-linecap="round" />
+              <circle cx="0" cy="0" r="5" fill="#0369a1" />
+            </g>
+            <rect x="255" y="18" width="90" height="36" rx="8" fill="#f0f9ff" stroke="#0284c7" stroke-width="1.5" />
+            <text x="300" y="33" text-anchor="middle" font-size="10" font-weight="800" fill="#0369a1">FLOW WHEEL (A)</text>
+            <text x="300" y="47" text-anchor="middle" font-size="12" font-weight="800" font-family="monospace" fill="#0f172a" id="svgAmmeterVal">1.00 A</text>
+          </g>
+
+          <!-- Mistake: Voltmeter Plug inside the pipe -->
+          <g id="seriesVoltmeterPlug" style="display: none;">
+            <rect x="275" y="65" width="50" height="50" rx="8" fill="#ede9fe" stroke="#7c3aed" stroke-width="3.5" />
+            <text x="300" y="88" text-anchor="middle" font-size="16" font-weight="800" fill="#7c3aed">V</text>
+            <text x="300" y="104" text-anchor="middle" font-size="9" font-weight="800" fill="#5b21b6">BLOCKED!</text>
+            <rect x="240" y="18" width="120" height="36" rx="8" fill="#f5f3ff" stroke="#7c3aed" stroke-width="1.5" />
+            <text x="300" y="33" text-anchor="middle" font-size="10" font-weight="800" fill="#6d28d9">PLUGGED BY (V)</text>
+            <text x="300" y="47" text-anchor="middle" font-size="12" font-weight="800" font-family="monospace" fill="#0f172a" id="svgSeriesVoltVal">6.00 V</text>
+          </g>
+        </g>
+
+        <!-- Parallel Branch Slot (x=620, y=200): Normal = Pressure Gauge (Voltmeter), Mistake = Ammeter Bypass -->
+        <g id="parallelSlotGroup">
+          <!-- Pressure Gauge (Voltmeter) -->
+          <g id="parallelVoltmeter">
+            <circle cx="620" cy="200" r="32" fill="#ede9fe" stroke="#7c3aed" stroke-width="3.5" />
+            <text x="620" y="196" text-anchor="middle" font-size="16" font-weight="800" fill="#7c3aed">V</text>
+            <text x="620" y="213" text-anchor="middle" font-size="11" font-weight="800" font-family="monospace" fill="#0f172a" id="svgVoltVal">6.00 V</text>
+            <text x="620" y="248" text-anchor="middle" font-size="11" font-weight="800" fill="#6d28d9">Pressure Gauge</text>
+            <text x="620" y="262" text-anchor="middle" font-size="10" fill="#475569">(Voltmeter)</text>
+          </g>
+
+          <!-- Mistake: Ammeter in Parallel Bypass -->
+          <g id="parallelAmmeter" style="display: none;">
+            <circle cx="620" cy="200" r="32" fill="#fee2e2" stroke="#dc2626" stroke-width="3.5" />
+            <g id="bypassWheel" transform="translate(620, 200)">
+              <line x1="-20" y1="0" x2="20" y2="0" stroke="#dc2626" stroke-width="4" stroke-linecap="round" />
+              <line x1="0" y1="-20" x2="0" y2="20" stroke="#dc2626" stroke-width="4" stroke-linecap="round" />
+            </g>
+            <rect x="562" y="242" width="116" height="36" rx="8" fill="#fee2e2" stroke="#dc2626" stroke-width="1.5" />
+            <text x="620" y="257" text-anchor="middle" font-size="10" font-weight="800" fill="#b91c1c">SHORT CIRCUIT!</text>
+            <text x="620" y="271" text-anchor="middle" font-size="10" font-weight="700" fill="#7f1d1d">Water skips squeeze</text>
+          </g>
+        </g>
+
+        <!-- Flow Direction Label -->
+        <text x="300" y="346" text-anchor="middle" font-size="12" font-weight="700" fill="#475569" id="flowSummaryLabel">
+          ← Water returns at low pressure to be pumped again ←
+        </text>
+      </svg>
+    </div>
+
+    <!-- Sliders -->
+    <div class="sliders-grid">
+      <div class="slider-card v">
+        <div class="slider-header">
+          <div>
+            <div class="slider-title" style="color: var(--voltage);">Pump Pressure = Voltage</div>
+            <div class="slider-sub">How hard the pump pushes</div>
+          </div>
+          <div class="slider-val" style="color: var(--voltage);" id="vReadout">6 V</div>
+        </div>
+        <input type="range" id="vSlider" class="v-range" min="1" max="12" step="1" value="6" />
+      </div>
+
+      <div class="slider-card r">
+        <div class="slider-header">
+          <div>
+            <div class="slider-title" style="color: var(--resistance);">Pipe Squeeze = Resistance</div>
+            <div class="slider-sub">How narrow the pipe is pinched</div>
+          </div>
+          <div class="slider-val" style="color: var(--resistance);" id="rReadout">6 Ω</div>
+        </div>
+        <input type="range" id="rSlider" class="r-range" min="1" max="12" step="1" value="6" />
+      </div>
+    </div>
+
+    <!-- Quick Experiments -->
+    <div class="experiments">
+      <span class="exp-label">Try this:</span>
+      <button class="exp-btn" data-v="12" data-r="2">High Push, Wide Pipe</button>
+      <button class="exp-btn" data-v="12" data-r="12">High Push, Tight Squeeze</button>
+      <button class="exp-btn" data-v="2" data-r="10">Weak Push, Tight Squeeze</button>
+      <button class="exp-btn" data-v="6" data-r="6">Reset (6V, 6Ω)</button>
+    </div>
+  </div>
+
+  <!-- Right Column: Ohm's Law, Analogy Cheat Sheet, Circuit Sync -->
+  <div class="side-stack">
+    <!-- Live Ohm's Law -->
+    <div class="card">
+      <div class="card-title">Live Ohm’s Law: Current = Voltage ÷ Resistance</div>
+      <div class="formula-box">
+        <div class="f-item i">
+          <div class="f-num" id="fCurrent">1.00 A</div>
+          <div class="f-label">Current (Flow)</div>
+        </div>
+        <div class="f-op">=</div>
+        <div class="f-item v">
+          <div class="f-num" id="fVoltage">6 V</div>
+          <div class="f-label">Voltage (Push)</div>
+        </div>
+        <div class="f-op">÷</div>
+        <div class="f-item r">
+          <div class="f-num" id="fResistance">6 Ω</div>
+          <div class="f-label">Resistance (Squeeze)</div>
+        </div>
+      </div>
+
+      <div class="feedback-box" id="feedbackBox" style="margin-top: 12px;">
+        <strong id="feedbackTitle">Steady Flow</strong>
+        <span id="feedbackDesc">The pump pushes water at 6 V through a 6 Ω squeeze, creating a steady flow of 1.00 A.</span>
+      </div>
+    </div>
+
+    <!-- Equivalent Electrical Circuit Mini Card -->
+    <div class="card">
+      <div class="card-title">Equivalent Electrical Circuit</div>
+      <div class="mini-circuit">
+        <svg viewBox="0 0 210 120" style="width: 190px; flex-shrink: 0;">
+          <rect x="30" y="20" width="140" height="80" fill="none" stroke="#334155" stroke-width="3" />
+          <!-- Battery left -->
+          <rect x="20" y="45" width="20" height="30" fill="#f8fafc" />
+          <line x1="18" y1="53" x2="42" y2="53" stroke="#dc2626" stroke-width="3.5" />
+          <line x1="24" y1="65" x2="36" y2="65" stroke="#0f172a" stroke-width="4.5" />
+          <!-- Top Ammeter or Plug -->
+          <circle cx="100" cy="20" r="12" fill="#e0f2fe" stroke="#0284c7" stroke-width="2.5" id="miniTopCircle" />
+          <text x="100" y="24" text-anchor="middle" font-size="11" font-weight="800" fill="#0284c7" id="miniTopText">A</text>
+          <!-- Right Bulb/Resistor -->
+          <circle cx="170" cy="60" r="14" fill="#fef3c7" stroke="#d97706" stroke-width="2.5" />
+          <path d="M 162 52 L 178 68 M 178 52 L 162 68" stroke="#b45309" stroke-width="2" />
+          <!-- Parallel Voltmeter/Ammeter -->
+          <path d="M 170 30 L 198 30 L 198 90 L 170 90" fill="none" stroke="#334155" stroke-width="2" />
+          <circle cx="198" cy="60" r="11" fill="#ede9fe" stroke="#7c3aed" stroke-width="2" id="miniSideCircle" />
+          <text x="198" y="64" text-anchor="middle" font-size="10" font-weight="800" fill="#7c3aed" id="miniSideText">V</text>
+        </svg>
+        <div style="font-size: 0.8rem; color: var(--muted);" id="miniCaption">
+          <strong style="color: var(--text); display:block; margin-bottom:4px;">1-to-1 Match</strong>
+          Pump = Battery<br>
+          Water Flow = Current<br>
+          Narrow Pipe = Bulb/Resistor
+        </div>
+      </div>
+    </div>
+
+    <!-- Analogy Key -->
+    <div class="card">
+      <div class="card-title">Analogy Cheat Sheet</div>
+      <div class="analogy-list">
+        <div class="analogy-row">
+          <div class="a-icon v">V</div>
+          <div>
+            <div class="a-title">Voltage = Water Pressure (Volts)</div>
+            <div class="a-desc">The pump pushes water out at high pressure. Without pressure, water sits still.</div>
+          </div>
+        </div>
+        <div class="analogy-row">
+          <div class="a-icon i">A</div>
+          <div>
+            <div class="a-title">Current = Flow Rate (Amps)</div>
+            <div class="a-desc">How many litres pass a spot every second—measured by a wheel <strong>inside</strong> the pipe (series).</div>
+          </div>
+        </div>
+        <div class="analogy-row">
+          <div class="a-icon r">Ω</div>
+          <div>
+            <div class="a-title">Resistance = Narrow Pipe (Ohms)</div>
+            <div class="a-desc">Pinching the pipe slows the flow everywhere in the loop.</div>
+          </div>
+        </div>
+      </div>
+    </div>
+  </div>
+</main>
+
+<script>
+  const state = {
+    voltage: 6,
+    resistance: 6,
+    mode: 'normal', // 'normal' | 'voltmeter_series' | 'ammeter_parallel'
+    pumpAngle: 0,
+    wheelAngle: 0,
+    bypassWheelAngle: 0,
+    droplets: []
+  };
+
+  const el = {
+    vSlider: document.getElementById('vSlider'),
+    rSlider: document.getElementById('rSlider'),
+    vReadout: document.getElementById('vReadout'),
+    rReadout: document.getElementById('rReadout'),
+    svgVoltLabel: document.getElementById('svgVoltLabel'),
+    svgResLabel: document.getElementById('svgResLabel'),
+    svgAmmeterVal: document.getElementById('svgAmmeterVal'),
+    svgSeriesVoltVal: document.getElementById('svgSeriesVoltVal'),
+    svgVoltVal: document.getElementById('svgVoltVal'),
+    fCurrent: document.getElementById('fCurrent'),
+    fVoltage: document.getElementById('fVoltage'),
+    fResistance: document.getElementById('fResistance'),
+    feedbackBox: document.getElementById('feedbackBox'),
+    feedbackTitle: document.getElementById('feedbackTitle'),
+    feedbackDesc: document.getElementById('feedbackDesc'),
+    pumpImpeller: document.getElementById('pumpImpeller'),
+    ammeterWheel: document.getElementById('ammeterWheel'),
+    bypassWheel: document.getElementById('bypassWheel'),
+    jawLeft: document.getElementById('jawLeft'),
+    jawRight: document.getElementById('jawRight'),
+    squeezeWater: document.getElementById('squeezeWater'),
+    workGlow: document.getElementById('workGlow'),
+    highPressurePipe: document.getElementById('highPressurePipe'),
+    lowPressurePipe: document.getElementById('lowPressurePipe'),
+    parallelOuter: document.getElementById('parallelOuter'),
+    parallelInner: document.getElementById('parallelInner'),
+    seriesAmmeter: document.getElementById('seriesAmmeter'),
+    seriesVoltmeterPlug: document.getElementById('seriesVoltmeterPlug'),
+    parallelVoltmeter: document.getElementById('parallelVoltmeter'),
+    parallelAmmeter: document.getElementById('parallelAmmeter'),
+    svgBox: document.getElementById('svgBox'),
+    mainLoopPath: document.getElementById('mainLoopPath'),
+    bypassLoopPath: document.getElementById('bypassLoopPath'),
+    dropletsLayer: document.getElementById('dropletsLayer'),
+    modeButtons: document.querySelectorAll('.mode-btn'),
+    expButtons: document.querySelectorAll('.exp-btn'),
+    miniTopCircle: document.getElementById('miniTopCircle'),
+    miniTopText: document.getElementById('miniTopText'),
+    miniSideCircle: document.getElementById('miniSideCircle'),
+    miniSideText: document.getElementById('miniSideText')
+  };
+
+  // Create 26 water droplets
+  const NUM_DROPLETS = 26;
+  const mainLen = el.mainLoopPath.getTotalLength();
+  const bypassLen = el.bypassLoopPath.getTotalLength();
+
+  for (let i = 0; i < NUM_DROPLETS; i++) {
+    const c = document.createElementNS('http://www.w3.org/2000/svg', 'circle');
+    c.setAttribute('r', '5.5');
+    c.setAttribute('fill', '#0284c7');
+    c.setAttribute('stroke', '#ffffff');
+    c.setAttribute('stroke-width', '1.5');
+    el.dropletsLayer.appendChild(c);
+    state.droplets.push({
+      el: c,
+      frac: i / NUM_DROPLETS
+    });
+  }
+
+  function updateStaticUI() {
+    const V = state.voltage;
+    const R = state.resistance;
+
+    el.vReadout.textContent = `${V} V`;
+    el.rReadout.textContent = `${R} Ω`;
+    el.svgVoltLabel.textContent = `= Voltage (${V} V)`;
+    el.svgResLabel.textContent = `= Resistance (${R} Ω)`;
+    el.fVoltage.textContent = `${V} V`;
+    el.fResistance.textContent = `${R} Ω`;
+
+    // Pinch the pipe jaws based on Resistance (1..12)
+    // At R=1, pinch=1px (wide open). At R=12, pinch=12px (very narrow).
+    const pinch = 1 + ((R - 1) / 11) * 11;
+    el.jawLeft.setAttribute('d', `M 480 165 L ${486 + pinch} 185 L ${486 + pinch} 215 L 480 235 Z`);
+    el.jawRight.setAttribute('d', `M 520 165 L ${514 - pinch} 185 L ${514 - pinch} 215 L 520 235 Z`);
+
+    // Mode visual switching
+    el.svgBox.classList.remove('warning-border');
+
+    if (state.mode === 'normal') {
+      const I = V / R;
+      el.fCurrent.textContent = `${I.toFixed(2)} A`;
+      el.svgAmmeterVal.textContent = `${I.toFixed(2)} A`;
+      el.svgVoltVal.textContent = `${V.toFixed(2)} V`;
+
+      el.seriesAmmeter.style.display = 'block';
+      el.seriesVoltmeterPlug.style.display = 'none';
+      el.parallelVoltmeter.style.display = 'block';
+      el.parallelAmmeter.style.display = 'none';
+
+      // Thin pressure sensor tubes
+      el.parallelOuter.setAttribute('stroke-width', '12');
+      el.parallelInner.setAttribute('stroke-width', '6');
+      el.parallelInner.setAttribute('stroke', '#ede9fe');
+
+      // Pressure colors: High up to squeeze, low after squeeze
+      el.highPressurePipe.setAttribute('d', 'M 100 200 L 100 90 L 500 90 L 500 165');
+      el.lowPressurePipe.setAttribute('d', 'M 500 235 L 500 310 L 100 310 L 100 200');
+
+      // Work glow proportional to power (V * I)
+      const glow = Math.min(1, (V * I) / 24);
+      el.workGlow.setAttribute('opacity', glow.toFixed(2));
+
+      // Mini circuit
+      el.miniTopCircle.setAttribute('fill', '#e0f2fe');
+      el.miniTopCircle.setAttribute('stroke', '#0284c7');
+      el.miniTopText.setAttribute('fill', '#0284c7');
+      el.miniTopText.textContent = 'A';
+      el.miniSideCircle.setAttribute('fill', '#ede9fe');
+      el.miniSideCircle.setAttribute('stroke', '#7c3aed');
+      el.miniSideText.setAttribute('fill', '#7c3aed');
+      el.miniSideText.textContent = 'V';
+
+      // Feedback
+      el.feedbackBox.className = 'feedback-box';
+      if (I >= 2.5) {
+        el.feedbackTitle.textContent = 'Fast Water Flow (High Current)!';
+        el.feedbackDesc.textContent = `Strong pump pressure (${V} V) pushing through a relatively wide pipe (${R} Ω) gives a big flow of ${I.toFixed(2)} A.`;
+      } else if (I <= 0.6) {
+        el.feedbackTitle.textContent = 'Slow Trickle (Low Current)';
+        el.feedbackDesc.textContent = `With ${V} V of push against a ${R} Ω squeeze, only ${I.toFixed(2)} A can squeeze through per second.`;
+      } else {
+        el.feedbackTitle.textContent = 'Steady Flow';
+        el.feedbackDesc.textContent = `The pump pushes at ${V} V through a ${R} Ω squeeze, producing a flow of ${I.toFixed(2)} A. Notice how the Flow Wheel sits inside the pipe and the Pressure Gauge compares both sides of the squeeze!`;
+      }
+    } else if (state.mode === 'voltmeter_series') {
+      // Blocked pipe!
+      el.fCurrent.textContent = '0.00 A';
+      el.svgSeriesVoltVal.textContent = `${V.toFixed(2)} V`;
+
+      el.seriesAmmeter.style.display = 'none';
+      el.seriesVoltmeterPlug.style.display = 'block';
+      el.parallelVoltmeter.style.display = 'block';
+      el.parallelAmmeter.style.display = 'none';
+      el.svgVoltVal.textContent = '0.00 V';
+
+      el.parallelOuter.setAttribute('stroke-width', '12');
+      el.parallelInner.setAttribute('stroke-width', '6');
+      el.parallelInner.setAttribute('stroke', '#ede9fe');
+
+      // High pressure stops right at the Voltmeter plug (x=300, y=90)!
+      el.highPressurePipe.setAttribute('d', 'M 100 200 L 100 90 L 285 90');
+      el.lowPressurePipe.setAttribute('d', 'M 315 90 L 500 90 L 500 310 L 100 310 L 100 200');
+      el.workGlow.setAttribute('opacity', '0');
+
+      el.miniTopCircle.setAttribute('fill', '#ede9fe');
+      el.miniTopCircle.setAttribute('stroke', '#7c3aed');
+      el.miniTopText.setAttribute('fill', '#7c3aed');
+      el.miniTopText.textContent = 'V';
+      el.miniSideCircle.setAttribute('fill', '#ede9fe');
+      el.miniSideCircle.setAttribute('stroke', '#7c3aed');
+      el.miniSideText.setAttribute('fill', '#7c3aed');
+      el.miniSideText.textContent = 'V';
+
+      el.feedbackBox.className = 'feedback-box warn';
+      el.feedbackTitle.textContent = 'Pipe Blocked! Why You Never Put a Voltmeter in Series';
+      el.feedbackDesc.textContent = `A voltmeter has enormous internal resistance—like jamming a solid plug into the pipe. Water stops flowing completely (0.00 A), the squeeze gets no water, and the plug feels the full ${V}.00 V pump pressure pushing against it.`;
+    } else if (state.mode === 'ammeter_parallel') {
+      // Short circuit bypass!
+      const I_surge = V / 0.4;
+      el.fCurrent.textContent = `${I_surge.toFixed(1)} A!`;
+      el.svgAmmeterVal.textContent = `${I_surge.toFixed(1)} A!`;
+
+      el.seriesAmmeter.style.display = 'block';
+      el.seriesVoltmeterPlug.style.display = 'none';
+      el.parallelVoltmeter.style.display = 'none';
+      el.parallelAmmeter.style.display = 'block';
+      el.svgBox.classList.add('warning-border');
+
+      // Wide open bypass pipe!
+      el.parallelOuter.setAttribute('stroke-width', '34');
+      el.parallelInner.setAttribute('stroke-width', '24');
+      el.parallelInner.setAttribute('stroke', '#38bdf8');
+
+      el.highPressurePipe.setAttribute('d', 'M 100 200 L 100 90 L 500 90 L 500 125');
+      el.lowPressurePipe.setAttribute('d', 'M 500 275 L 500 310 L 100 310 L 100 200');
+      el.workGlow.setAttribute('opacity', '0');
+
+      el.miniTopCircle.setAttribute('fill', '#e0f2fe');
+      el.miniTopCircle.setAttribute('stroke', '#0284c7');
+      el.miniTopText.setAttribute('fill', '#0284c7');
+      el.miniTopText.textContent = 'A';
+      el.miniSideCircle.setAttribute('fill', '#fee2e2');
+      el.miniSideCircle.setAttribute('stroke', '#dc2626');
+      el.miniSideText.setAttribute('fill', '#dc2626');
+      el.miniSideText.textContent = 'A';
+
+      el.feedbackBox.className = 'feedback-box danger';
+      el.feedbackTitle.textContent = 'SHORT CIRCUIT! Why You Never Put an Ammeter in Parallel';
+      el.feedbackDesc.textContent = `An ammeter has almost zero resistance—like opening a wide-open shortcut pipe around the squeeze! Nearly all the water rushes through the easy bypass instead of the narrow pipe, causing a massive flood (${I_surge.toFixed(1)} A) that blows the ammeter's fuse!`;
+    }
+  }
+
+  // Smooth Animation Loop
+  let lastTime = performance.now();
+  function animate(now) {
+    const dt = Math.min(0.05, (now - lastTime) / 1000);
+    lastTime = now;
+
+    // Spin Pump Impeller based on Voltage
+    state.pumpAngle = (state.pumpAngle + state.voltage * 35 * dt) % 360;
+    el.pumpImpeller.setAttribute('transform', `translate(100, 200) rotate(${state.pumpAngle.toFixed(1)})`);
+
+    // Determine Flow Speed
+    let flowRate = 0;
+    let activePath = el.mainLoopPath;
+    let activeLen = mainLen;
+
+    if (state.mode === 'normal') {
+      flowRate = state.voltage / state.resistance;
+    } else if (state.mode === 'voltmeter_series') {
+      flowRate = 0;
+    } else if (state.mode === 'ammeter_parallel') {
+      flowRate = Math.min(8, state.voltage / 0.8); // Fast visual surge
+      activePath = el.bypassLoopPath;
+      activeLen = bypassLen;
+    }
+
+    // Spin Series Flow Wheel
+    state.wheelAngle = (state.wheelAngle + flowRate * 140 * dt) % 360;
+    el.ammeterWheel.setAttribute('transform', `translate(300, 90) rotate(${state.wheelAngle.toFixed(1)})`);
+
+    // Spin Bypass Wheel if active
+    if (state.mode === 'ammeter_parallel') {
+      state.bypassWheelAngle = (state.bypassWheelAngle + flowRate * 180 * dt) % 360;
+      el.bypassWheel.setAttribute('transform', `translate(620, 200) rotate(${state.bypassWheelAngle.toFixed(1)})`);
+    }
+
+    // Move Water Droplets along active path
+    const speedFrac = flowRate * 0.085; // fraction of loop per second
+    for (const d of state.droplets) {
+      d.frac = (d.frac + speedFrac * dt) % 1;
+      const pt = activePath.getPointAtLength(d.frac * activeLen);
+      d.el.setAttribute('cx', pt.x.toFixed(1));
+      d.el.setAttribute('cy', pt.y.toFixed(1));
+      d.el.setAttribute('fill', state.mode === 'ammeter_parallel' ? '#dc2626' : '#0284c7');
+    }
+
+    requestAnimationFrame(animate);
+  }
+
+  // Event Listeners
+  el.vSlider.addEventListener('input', e => {
+    state.voltage = Number(e.target.value);
+    updateStaticUI();
+  });
+
+  el.rSlider.addEventListener('input', e => {
+    state.resistance = Number(e.target.value);
+    updateStaticUI();
+  });
+
+  el.modeButtons.forEach(btn => {
+    btn.addEventListener('click', () => {
+      el.modeButtons.forEach(b => b.classList.remove('active'));
+      btn.classList.add('active');
+      state.mode = btn.dataset.mode;
+      updateStaticUI();
+    });
+  });
+
+  el.expButtons.forEach(btn => {
+    btn.addEventListener('click', () => {
+      state.voltage = Number(btn.dataset.v);
+      state.resistance = Number(btn.dataset.r);
+      el.vSlider.value = state.voltage;
+      el.rSlider.value = state.resistance;
+      // Switch back to normal mode so they can see Ohm's Law clearly
+      state.mode = 'normal';
+      el.modeButtons.forEach(b => b.classList.toggle('active', b.dataset.mode === 'normal'));
+      updateStaticUI();
+    });
+  });
+
+  updateStaticUI();
+  requestAnimationFrame(animate);
+</script>
+</body>
+</html>

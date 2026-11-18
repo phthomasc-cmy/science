@@ -1,0 +1,910 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <title>Resistance Lab: Length, Thickness &amp; Material</title>
+  <style>
+    :root {
+      --bg: #f1f5f9;
+      --surface: #ffffff;
+      --surface-alt: #f8fafc;
+      --border: #cbd5e1;
+      --text: #0f172a;
+      --muted: #475569;
+      --primary: #2563eb;
+      --primary-light: #dbeafe;
+      --len-col: #0284c7;
+      --area-col: #16a34a;
+      --mat-col: #9333ea;
+      --res-col: #d97706;
+      --radius: 14px;
+      --shadow: 0 6px 20px rgba(15, 23, 42, 0.06);
+    }
+
+    * { box-sizing: border-box; }
+
+    body {
+      margin: 0;
+      font-family: system-ui, -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, sans-serif;
+      background: var(--bg);
+      color: var(--text);
+      line-height: 1.5;
+    }
+
+    header {
+      background: var(--surface);
+      border-bottom: 1px solid var(--border);
+      padding: 14px 24px;
+      display: flex;
+      flex-wrap: wrap;
+      align-items: center;
+      justify-content: space-between;
+      gap: 12px;
+    }
+
+    .brand {
+      display: flex;
+      align-items: center;
+      gap: 12px;
+    }
+
+    .brand-badge {
+      width: 42px;
+      height: 42px;
+      border-radius: 10px;
+      background: linear-gradient(135deg, #d97706, #ea580c);
+      color: white;
+      display: grid;
+      place-items: center;
+      font-weight: 800;
+      font-size: 16px;
+    }
+
+    .brand h1 { margin: 0; font-size: 1.15rem; }
+    .brand p { margin: 0; font-size: 0.85rem; color: var(--muted); }
+
+    main {
+      max-width: 1220px;
+      margin: 20px auto;
+      padding: 0 16px 32px;
+      display: grid;
+      grid-template-columns: 1.45fr 1fr;
+      gap: 20px;
+      align-items: start;
+    }
+
+    @media (max-width: 980px) {
+      main { grid-template-columns: 1fr; }
+    }
+
+    .card {
+      background: var(--surface);
+      border: 1px solid var(--border);
+      border-radius: var(--radius);
+      box-shadow: var(--shadow);
+      padding: 18px;
+    }
+
+    .card-title {
+      margin: 0 0 10px;
+      font-size: 0.98rem;
+      font-weight: 800;
+      display: flex;
+      justify-content: space-between;
+      align-items: center;
+      gap: 8px;
+      flex-wrap: wrap;
+    }
+
+    .svg-box {
+      border: 1px solid var(--border);
+      border-radius: 10px;
+      overflow: hidden;
+      background: #ffffff;
+    }
+
+    svg {
+      display: block;
+      width: 100%;
+      height: auto;
+    }
+
+    .zoom-badge {
+      font-size: 0.75rem;
+      font-weight: 700;
+      padding: 4px 10px;
+      border-radius: 999px;
+      background: #e0f2fe;
+      color: #0369a1;
+      display: inline-flex;
+      align-items: center;
+      gap: 6px;
+    }
+
+    .legend-dot {
+      display: inline-block;
+      width: 10px;
+      height: 10px;
+      border-radius: 50%;
+    }
+    .legend-dot.blue { background: #2563eb; border: 1px solid #1d4ed8; }
+    .legend-dot.orange { background: #fb923c; border: 1px solid #c2410c; }
+
+    /* Controls */
+    .controls-stack {
+      margin-top: 14px;
+      display: flex;
+      flex-direction: column;
+      gap: 12px;
+    }
+
+    .sliders-row {
+      display: grid;
+      grid-template-columns: 1fr 1fr;
+      gap: 12px;
+    }
+
+    @media (max-width: 600px) {
+      .sliders-row { grid-template-columns: 1fr; }
+    }
+
+    .ctrl-box {
+      background: var(--surface-alt);
+      border: 1px solid var(--border);
+      border-radius: 10px;
+      padding: 12px 14px;
+    }
+
+    .ctrl-box.len { border-left: 4px solid var(--len-col); }
+    .ctrl-box.area { border-left: 4px solid var(--area-col); }
+    .ctrl-box.mat { border-left: 4px solid var(--mat-col); }
+
+    .ctrl-head {
+      display: flex;
+      justify-content: space-between;
+      align-items: baseline;
+      margin-bottom: 6px;
+    }
+
+    .ctrl-name { font-weight: 800; font-size: 0.88rem; }
+    .ctrl-val { font-family: ui-monospace, monospace; font-weight: 800; font-size: 1rem; }
+
+    input[type="range"] {
+      width: 100%;
+      cursor: pointer;
+    }
+
+    input[type="range"].len-r { accent-color: var(--len-col); }
+    input[type="range"].area-r { accent-color: var(--area-col); }
+
+    .mat-pills {
+      display: grid;
+      grid-template-columns: repeat(4, 1fr);
+      gap: 8px;
+    }
+
+    @media (max-width: 550px) {
+      .mat-pills { grid-template-columns: repeat(2, 1fr); }
+    }
+
+    .mat-btn {
+      border: 2px solid var(--border);
+      background: white;
+      border-radius: 8px;
+      padding: 8px 6px;
+      cursor: pointer;
+      text-align: center;
+      transition: all 0.15s ease;
+    }
+
+    .mat-btn:hover { border-color: #94a3b8; }
+
+    .mat-btn.active {
+      border-color: var(--mat-col);
+      background: #faf5ff;
+      box-shadow: 0 0 0 2px rgba(147, 51, 234, 0.15);
+    }
+
+    .mat-dot {
+      display: inline-block;
+      width: 10px;
+      height: 10px;
+      border-radius: 50%;
+      margin-right: 4px;
+    }
+
+    .mat-title { font-weight: 800; font-size: 0.84rem; display: block; }
+    .mat-sub { font-size: 0.72rem; color: var(--muted); }
+
+    /* Right Side Stack */
+    .side-stack {
+      display: flex;
+      flex-direction: column;
+      gap: 16px;
+    }
+
+    .readout-pair {
+      display: grid;
+      grid-template-columns: 1fr 1fr;
+      gap: 10px;
+    }
+
+    .stat-card {
+      background: var(--surface-alt);
+      border: 1px solid var(--border);
+      border-radius: 10px;
+      padding: 12px;
+    }
+
+    .stat-card.res { border-left: 4px solid var(--res-col); }
+    .stat-card.cur { border-left: 4px solid var(--len-col); }
+
+    .stat-lbl {
+      font-size: 0.75rem;
+      font-weight: 700;
+      text-transform: uppercase;
+      color: var(--muted);
+    }
+
+    .stat-num {
+      font-family: ui-monospace, monospace;
+      font-size: 1.45rem;
+      font-weight: 800;
+      margin: 2px 0;
+    }
+
+    .stat-note { font-size: 0.75rem; color: var(--muted); }
+
+    .formula-bar {
+      margin-top: 10px;
+      background: #fffbeb;
+      border: 1px solid #fde68a;
+      border-radius: 8px;
+      padding: 8px 12px;
+      font-size: 0.84rem;
+      color: #78350f;
+      display: flex;
+      justify-content: space-between;
+      align-items: center;
+      flex-wrap: wrap;
+      gap: 6px;
+    }
+
+    .explain-box {
+      padding: 12px 14px;
+      border-radius: 10px;
+      border: 1px solid var(--border);
+      background: #eff6ff;
+      color: #1e3a8a;
+      font-size: 0.87rem;
+    }
+
+    .explain-box strong {
+      display: block;
+      margin-bottom: 4px;
+      font-size: 0.94rem;
+    }
+
+    .analogy-tip {
+      margin-top: 10px;
+      padding: 10px 12px;
+      border-radius: 8px;
+      background: var(--surface-alt);
+      border: 1px dashed var(--border);
+      font-size: 0.82rem;
+      color: var(--muted);
+    }
+
+    /* Data Logger Table */
+    .table-wrap {
+      max-height: 210px;
+      overflow-y: auto;
+      border: 1px solid var(--border);
+      border-radius: 8px;
+      margin-top: 8px;
+    }
+
+    table {
+      width: 100%;
+      border-collapse: collapse;
+      font-size: 0.82rem;
+    }
+
+    th, td {
+      padding: 7px 9px;
+      text-align: left;
+      border-bottom: 1px solid var(--border);
+    }
+
+    th {
+      background: var(--surface-alt);
+      font-weight: 700;
+      position: sticky;
+      top: 0;
+    }
+
+    .btn-sm {
+      padding: 6px 12px;
+      border-radius: 7px;
+      border: 1px solid var(--border);
+      background: white;
+      font-weight: 700;
+      font-size: 0.8rem;
+      cursor: pointer;
+    }
+
+    .btn-sm.primary {
+      background: var(--primary);
+      border-color: var(--primary);
+      color: white;
+    }
+
+    .btn-sm:hover { opacity: 0.92; }
+
+    .rules-grid {
+      display: grid;
+      grid-template-columns: 1fr;
+      gap: 8px;
+      font-size: 0.83rem;
+    }
+
+    .rule-item {
+      padding: 8px 10px;
+      border-radius: 8px;
+      background: var(--surface-alt);
+      border: 1px solid var(--border);
+    }
+  </style>
+</head>
+<body>
+
+<header>
+  <div class="brand">
+    <div class="brand-badge">R</div>
+    <div>
+      <h1>What Affects Electrical Resistance?</h1>
+      <p>Explore how wire Length, Thickness (Area), and Material control current flow</p>
+    </div>
+  </div>
+</header>
+
+<main>
+  <!-- Left Column: Macro Lab Bench + Microscopic Wire View + Controls -->
+  <div class="card">
+    <div class="card-title">
+      <span>1. Lab Bench Circuit (3.0 V Supply)</span>
+      <span style="font-size: 0.78rem; color: var(--muted); font-weight: 600;">Slide the clip or thicken the wire below</span>
+    </div>
+
+    <!-- Macro Bench SVG -->
+    <div class="svg-box" style="margin-bottom: 14px;">
+      <svg viewBox="0 0 680 190" id="benchSvg" aria-label="Lab bench resistance experiment">
+        <rect width="680" height="190" fill="#ffffff" />
+
+        <!-- Top Circuit Loop (Battery 3.0V + Ammeter) -->
+        <path d="M 110 112 L 110 38 L 285 38" fill="none" stroke="#334155" stroke-width="3.5" stroke-linejoin="round" />
+        <path d="M 335 38 L 580 38 L 580 112" fill="none" stroke="#334155" stroke-width="3.5" stroke-linejoin="round" />
+
+        <!-- Battery at top-left (x=185, y=38) -->
+        <rect x="168" y="20" width="34" height="36" fill="#ffffff" />
+        <line x1="176" y1="20" x2="176" y2="56" stroke="#dc2626" stroke-width="4" />
+        <line x1="192" y1="28" x2="192" y2="48" stroke="#0f172a" stroke-width="5" />
+        <text x="164" y="20" font-size="11" font-weight="800" fill="#dc2626">+</text>
+        <text x="197" y="20" font-size="12" font-weight="800" fill="#0f172a">&#8722;</text>
+        <text x="184" y="70" text-anchor="middle" font-size="11" font-weight="700" fill="#334155">3.0 V Battery</text>
+
+        <!-- Ammeter at top-center (x=310, y=38) -->
+        <circle cx="310" cy="38" r="22" fill="#e0f2fe" stroke="#0284c7" stroke-width="3" />
+        <text x="310" y="36" text-anchor="middle" font-size="13" font-weight="800" fill="#0284c7">A</text>
+        <text x="310" y="50" text-anchor="middle" font-size="10" font-weight="800" font-family="monospace" fill="#0f172a" id="benchAmmeterText">0.61 A</text>
+
+        <!-- Wooden Metre Ruler (x=110 to x=560 -> 450px = 100cm) -->
+        <rect x="95" y="134" width="490" height="36" rx="4" fill="#fef3c7" stroke="#d97706" stroke-width="2" />
+        <g id="rulerTicks" fill="#92400e" font-size="10" font-weight="700" text-anchor="middle">
+          <line x1="110" y1="134" x2="110" y2="146" stroke="#92400e" stroke-width="2" /><text x="110" y="162">0 cm</text>
+          <line x1="200" y1="134" x2="200" y2="144" stroke="#92400e" stroke-width="1.5" /><text x="200" y="162">20</text>
+          <line x1="290" y1="134" x2="290" y2="144" stroke="#92400e" stroke-width="1.5" /><text x="290" y="162">40</text>
+          <line x1="380" y1="134" x2="380" y2="144" stroke="#92400e" stroke-width="1.5" /><text x="380" y="162">60</text>
+          <line x1="470" y1="134" x2="470" y2="144" stroke="#92400e" stroke-width="1.5" /><text x="470" y="162">80</text>
+          <line x1="560" y1="134" x2="560" y2="146" stroke="#92400e" stroke-width="2" /><text x="560" y="162">100 cm</text>
+        </g>
+
+        <!-- Full 100cm Test Wire lying on ruler -->
+        <line x1="110" y1="114" x2="560" y2="114" stroke="#cbd5e1" stroke-width="6" stroke-linecap="round" id="unusedWire" />
+        <!-- Active Wire between Clip 1 and Clip 2 -->
+        <line x1="110" y1="114" x2="380" y2="114" stroke="#94a3b8" stroke-width="6" stroke-linecap="round" id="activeWire" />
+
+        <!-- Fixed Clip 1 at 0 cm (x=110) -->
+        <g transform="translate(110, 114)">
+          <polygon points="-7,-12 7,-12 4,4 -4,4" fill="#dc2626" stroke="#7f1d1d" stroke-width="1.5" />
+          <text x="0" y="-17" text-anchor="middle" font-size="10" font-weight="700" fill="#7f1d1d">Clip 1</text>
+        </g>
+
+        <!-- Flexible Lead from Clip 2 to right terminal (580, 112) -->
+        <path id="flexLead" d="M 380 104 Q 480 68 580 112" fill="none" stroke="#334155" stroke-width="3" stroke-dasharray="5 3" />
+
+        <!-- Sliding Clip 2 -->
+        <g id="clip2Group" transform="translate(380, 114)">
+          <polygon points="-7,-12 7,-12 4,4 -4,4" fill="#0f172a" stroke="#000" stroke-width="1.5" />
+          <text x="0" y="-17" text-anchor="middle" font-size="10" font-weight="700" fill="#0f172a">Clip 2</text>
+        </g>
+
+        <!-- Active Length Dimension Tag -->
+        <text x="245" y="96" text-anchor="middle" font-size="12" font-weight="800" fill="#0284c7" id="benchLengthTag">Active Length = 60 cm</text>
+      </svg>
+    </div>
+
+    <!-- Microscopic View -->
+    <div class="card-title">
+      <span>2. Zoomed Inside the Wire (Electrons vs. Metal Ions)</span>
+      <span class="zoom-badge">
+        <span class="legend-dot blue"></span> Free Electrons
+        &nbsp;
+        <span class="legend-dot orange"></span> Metal Ions (Obstacles)
+      </span>
+    </div>
+
+    <div class="svg-box">
+      <svg viewBox="0 0 640 210" id="microSvg" aria-label="Microscopic view inside the wire">
+        <rect width="640" height="210" fill="#f8fafc" />
+
+        <!-- Wire Body -->
+        <rect id="microWireBg" x="40" y="55" width="336" height="100" rx="6" fill="#fff7ed" stroke="#94a3b8" stroke-width="3" />
+
+        <!-- Direction caption -->
+        <text x="320" y="18" text-anchor="middle" font-size="11" font-weight="700" fill="#475569" id="microCaption">
+          Electrons travel from &#8722; to + through the metal ion grid
+        </text>
+
+        <!-- Ions & Electrons Layers -->
+        <g id="ionsLayer"></g>
+        <g id="electronsLayer"></g>
+
+        <!-- Bottom Scale Tag -->
+        <text x="320" y="198" text-anchor="middle" font-size="11" font-weight="700" fill="#475569" id="microStatsTag">
+          Electron Lanes: 2 | Material: Constantan | Length: 60 cm
+        </text>
+      </svg>
+    </div>
+
+    <!-- Sliders & Material Picker -->
+    <div class="controls-stack">
+      <div class="sliders-row">
+        <div class="ctrl-box len">
+          <div class="ctrl-head">
+            <span class="ctrl-name" style="color: var(--len-col);">1. Wire Length (<em>L</em>)</span>
+            <span class="ctrl-val" style="color: var(--len-col);" id="lenReadout">60 cm</span>
+          </div>
+          <input type="range" id="lenSlider" class="len-r" min="20" max="100" step="20" value="60" />
+          <div style="font-size: 0.74rem; color: var(--muted); margin-top: 3px;">Longer wire = more ions to bump into</div>
+        </div>
+
+        <div class="ctrl-box area">
+          <div class="ctrl-head">
+            <span class="ctrl-name" style="color: var(--area-col);">2. Thickness / Area (<em>A</em>)</span>
+            <span class="ctrl-val" style="color: var(--area-col);" id="areaReadout">0.10 mm&sup2;</span>
+          </div>
+          <input type="range" id="areaSlider" class="area-r" min="0.05" max="0.25" step="0.05" value="0.10" />
+          <div style="font-size: 0.74rem; color: var(--muted); margin-top: 3px;">Thicker wire = more lanes for electrons</div>
+        </div>
+      </div>
+
+      <div class="ctrl-box mat">
+        <div class="ctrl-head" style="margin-bottom: 8px;">
+          <span class="ctrl-name" style="color: var(--mat-col);">3. Wire Material (Resistivity &rho;)</span>
+          <span class="ctrl-val" style="color: var(--mat-col); font-size: 0.85rem;" id="matReadout">Constantan (4.9 &times; 10<sup>-7</sup> &Omega;&middot;m)</span>
+        </div>
+        <div class="mat-pills" id="matPills">
+          <button class="mat-btn" data-mat="copper">
+            <span class="mat-title"><span class="mat-dot" style="background:#d97706;"></span>Copper</span>
+            <span class="mat-sub">Very Low &rho;</span>
+          </button>
+          <button class="mat-btn" data-mat="iron">
+            <span class="mat-title"><span class="mat-dot" style="background:#64748b;"></span>Iron</span>
+            <span class="mat-sub">Low-Med &rho;</span>
+          </button>
+          <button class="mat-btn active" data-mat="constantan">
+            <span class="mat-title"><span class="mat-dot" style="background:#94a3b8;"></span>Constantan</span>
+            <span class="mat-sub">High &rho;</span>
+          </button>
+          <button class="mat-btn" data-mat="nichrome">
+            <span class="mat-title"><span class="mat-dot" style="background:#475569;"></span>Nichrome</span>
+            <span class="mat-sub">Very High &rho;</span>
+          </button>
+        </div>
+      </div>
+    </div>
+  </div>
+
+  <!-- Right Column: Live Readout, Explanation & Lab Data Table -->
+  <div class="side-stack">
+    <div class="card">
+      <div class="card-title">Live Measurements (at 3.0 V)</div>
+      <div class="readout-pair">
+        <div class="stat-card res">
+          <div class="stat-lbl">Wire Resistance (<em>R</em>)</div>
+          <div class="stat-num" style="color: var(--res-col);" id="resBig">2.94 &Omega;</div>
+          <div class="stat-note" id="resNote">Opposition to flow</div>
+        </div>
+        <div class="stat-card cur">
+          <div class="stat-lbl">Current (<em>I</em> = 3.0V &divide; <em>R</em>)</div>
+          <div class="stat-num" style="color: var(--len-col);" id="curBig">1.02 A</div>
+          <div class="stat-note" id="curNote">Safe steady current</div>
+        </div>
+      </div>
+      <div class="formula-bar">
+        <span><strong>Formula:</strong> <em>R</em> = &rho; &times; (<em>L</em> &divide; <em>A</em>)</span>
+        <span style="font-family: ui-monospace, monospace; font-weight: 700;" id="formulaNumbers"></span>
+      </div>
+    </div>
+
+    <div class="card">
+      <div class="card-title">Why Did That Happen?</div>
+      <div class="explain-box" id="explainBox">
+        <strong id="explainTitle">Explore the 3 Factors</strong>
+        <span id="explainDesc">Adjust the Length, Thickness, or Material on the left and watch how the microscopic ions and electron lanes change!</span>
+      </div>
+      <div class="analogy-tip" id="analogyTip">
+        <strong>Corridor Analogy:</strong> Imagine walking down a crowded school hallway. Making the hallway <strong>longer</strong> means bumping into more people. Making it <strong>narrower</strong> creates a bottleneck. Changing the <strong>material</strong> is like filling the hallway with slow-moving crowds instead of an empty corridor!
+      </div>
+    </div>
+
+    <div class="card">
+      <div class="card-title">
+        <span>Lab Results Table</span>
+        <div style="display:flex; gap:6px;">
+          <button class="btn-sm primary" id="recordBtn">+ Record Reading</button>
+          <button class="btn-sm" id="clearTableBtn">Clear</button>
+        </div>
+      </div>
+      <p style="margin: 0; font-size: 0.78rem; color: var(--muted);">
+        Test patterns! Try recording <strong>40 cm</strong> then <strong>80 cm</strong>, or <strong>0.10 mm&sup2;</strong> then <strong>0.20 mm&sup2;</strong>.
+      </p>
+      <div class="table-wrap">
+        <table>
+          <thead>
+            <tr>
+              <th>Material</th>
+              <th>Length</th>
+              <th>Area</th>
+              <th>Resistance</th>
+            </tr>
+          </thead>
+          <tbody id="logBody">
+            <tr>
+              <td colspan="4" style="text-align:center; color: var(--muted); padding: 14px;">No readings recorded yet.</td>
+            </tr>
+          </tbody>
+        </table>
+      </div>
+    </div>
+
+    <div class="card">
+      <div class="card-title">3 Golden Rules Summary</div>
+      <div class="rules-grid">
+        <div class="rule-item">
+          <strong style="color: var(--len-col);">1. Longer Wire &rarr; Higher Resistance:</strong>
+          Directly proportional (<em>R</em> &prop; <em>L</em>). Double the length = double the resistance.
+        </div>
+        <div class="rule-item">
+          <strong style="color: var(--area-col);">2. Thinner Wire &rarr; Higher Resistance:</strong>
+          Inversely proportional (<em>R</em> &prop; 1 / <em>A</em>). Half the area = double the resistance.
+        </div>
+        <div class="rule-item">
+          <strong style="color: var(--mat-col);">3. Material Matters:</strong>
+          Good conductors (like Copper) have low resistivity (&rho;); alloys (like Nichrome) have high resistivity.
+        </div>
+      </div>
+    </div>
+  </div>
+</main>
+
+<script>
+  const MATERIALS = {
+    copper: {
+      name: 'Copper',
+      rho: 1.7e-8,
+      rhoHtml: '1.7 &times; 10<sup>-8</sup> &Omega;&middot;m',
+      wireColor: '#d97706',
+      bgFill: '#fff7ed',
+      ionFill: '#fb923c',
+      ionStroke: '#c2410c',
+      ionGapX: 52,
+      jitter: 0.4,
+      desc: 'Copper has very low resistivity. Its atoms are spaced cleanly so free electrons glide through with very few collisions.'
+    },
+    iron: {
+      name: 'Iron',
+      rho: 1.0e-7,
+      rhoHtml: '1.0 &times; 10<sup>-7</sup> &Omega;&middot;m',
+      wireColor: '#64748b',
+      bgFill: '#f1f5f9',
+      ionFill: '#94a3b8',
+      ionStroke: '#475569',
+      ionGapX: 36,
+      jitter: 0.9,
+      desc: 'Iron has about 6\u00D7 the resistivity of copper \u2014 electrons collide more often as they push through.'
+    },
+    constantan: {
+      name: 'Constantan',
+      rho: 4.9e-7,
+      rhoHtml: '4.9 &times; 10<sup>-7</sup> &Omega;&middot;m',
+      wireColor: '#94a3b8',
+      bgFill: '#f8fafc',
+      ionFill: '#a855f7',
+      ionStroke: '#6b21a8',
+      ionGapX: 25,
+      jitter: 1.4,
+      desc: 'Constantan is a copper-nickel alloy with high resistivity, making it easy to measure resistance in school labs.'
+    },
+    nichrome: {
+      name: 'Nichrome',
+      rho: 1.1e-6,
+      rhoHtml: '1.1 &times; 10<sup>-6</sup> &Omega;&middot;m',
+      wireColor: '#475569',
+      bgFill: '#fef2f2',
+      ionFill: '#ef4444',
+      ionStroke: '#991b1b',
+      ionGapX: 18,
+      jitter: 2.0,
+      desc: 'Nichrome has very high resistivity (about 65\u00D7 copper!). Frequent electron collisions turn electrical energy into heat \u2014 just like in a toaster!'
+    }
+  };
+
+  const state = {
+    lengthCm: 60,
+    areaMm2: 0.10,
+    material: 'constantan',
+    lastChanged: 'init',
+    electrons: [],
+    logs: []
+  };
+
+  const el = {
+    lenSlider: document.getElementById('lenSlider'),
+    areaSlider: document.getElementById('areaSlider'),
+    lenReadout: document.getElementById('lenReadout'),
+    areaReadout: document.getElementById('areaReadout'),
+    matReadout: document.getElementById('matReadout'),
+    matBtns: document.querySelectorAll('.mat-btn'),
+    activeWire: document.getElementById('activeWire'),
+    unusedWire: document.getElementById('unusedWire'),
+    clip2Group: document.getElementById('clip2Group'),
+    flexLead: document.getElementById('flexLead'),
+    benchLengthTag: document.getElementById('benchLengthTag'),
+    benchAmmeterText: document.getElementById('benchAmmeterText'),
+    microWireBg: document.getElementById('microWireBg'),
+    ionsLayer: document.getElementById('ionsLayer'),
+    electronsLayer: document.getElementById('electronsLayer'),
+    microStatsTag: document.getElementById('microStatsTag'),
+    resBig: document.getElementById('resBig'),
+    curBig: document.getElementById('curBig'),
+    curNote: document.getElementById('curNote'),
+    formulaNumbers: document.getElementById('formulaNumbers'),
+    explainTitle: document.getElementById('explainTitle'),
+    explainDesc: document.getElementById('explainDesc'),
+    recordBtn: document.getElementById('recordBtn'),
+    clearTableBtn: document.getElementById('clearTableBtn'),
+    logBody: document.getElementById('logBody')
+  };
+
+  function calcPhysics() {
+    const mat = MATERIALS[state.material];
+    const L_m = state.lengthCm / 100;
+    const A_m2 = state.areaMm2 * 1e-6;
+    const R = mat.rho * (L_m / A_m2);
+    const V = 3.0;
+    const I = V / R;
+    return { R, I, V, mat };
+  }
+
+  function formatR(R) {
+    if (R < 0.1) return R.toFixed(3) + ' \u03A9';
+    return R.toFixed(2) + ' \u03A9';
+  }
+
+  function formatI(I) {
+    if (I >= 10) return I.toFixed(1) + ' A';
+    return I.toFixed(2) + ' A';
+  }
+
+  function getMicroBox() {
+    const w = 80 + (state.lengthCm / 100) * 480;
+    const x = 40;
+    const lanes = Math.round(state.areaMm2 / 0.05);
+    const halfH = 8 + lanes * 14;
+    const y = 105 - halfH;
+    const h = halfH * 2;
+    return { x, y, w, h, lanes };
+  }
+
+  function rebuildMicroParticles() {
+    const { x, y, w, h, lanes } = getMicroBox();
+    const mat = MATERIALS[state.material];
+
+    el.microWireBg.setAttribute('x', x);
+    el.microWireBg.setAttribute('y', y);
+    el.microWireBg.setAttribute('width', w);
+    el.microWireBg.setAttribute('height', h);
+    el.microWireBg.setAttribute('fill', mat.bgFill);
+    el.microWireBg.setAttribute('stroke', mat.wireColor);
+
+    let ionsHtml = '';
+    const padX = 16;
+    const laneH = h / lanes;
+
+    for (let lane = 0; lane < lanes; lane++) {
+      const cy = y + laneH * (lane + 0.5);
+      const offset = (lane % 2) * (mat.ionGapX * 0.45);
+      for (let ix = x + padX + offset; ix < x + w - 10; ix += mat.ionGapX) {
+        ionsHtml += `<circle cx="${ix.toFixed(1)}" cy="${cy.toFixed(1)}" r="5.5" fill="${mat.ionFill}" stroke="${mat.ionStroke}" stroke-width="1.2" opacity="0.85" />`;
+      }
+    }
+    el.ionsLayer.innerHTML = ionsHtml;
+
+    el.electronsLayer.innerHTML = '';
+    state.electrons = [];
+    const perLane = Math.max(3, Math.round(w / 44));
+
+    for (let lane = 0; lane < lanes; lane++) {
+      const baseY = y + laneH * (lane + 0.5);
+      for (let j = 0; j < perLane; j++) {
+        const dot = document.createElementNS('http://www.w3.org/2000/svg', 'circle');
+        dot.setAttribute('r', '4');
+        dot.setAttribute('fill', '#2563eb');
+        dot.setAttribute('stroke', '#ffffff');
+        dot.setAttribute('stroke-width', '1');
+        el.electronsLayer.appendChild(dot);
+
+        state.electrons.push({
+          el: dot,
+          relX: (j + Math.random() * 0.5) / perLane,
+          baseY,
+          phase: Math.random() * Math.PI * 2
+        });
+      }
+    }
+  }
+
+  function updateUI() {
+    const { R, I, mat } = calcPhysics();
+    const { lanes } = getMicroBox();
+
+    el.lenReadout.textContent = `${state.lengthCm} cm`;
+    el.areaReadout.textContent = `${state.areaMm2.toFixed(2)} mm\u00B2`;
+    el.matReadout.innerHTML = `${mat.name} (${mat.rhoHtml})`;
+
+    const clipX = 110 + (state.lengthCm / 100) * 450;
+    const strokeW = 2.5 + (state.areaMm2 / 0.05) * 1.8;
+
+    el.unusedWire.setAttribute('stroke-width', strokeW);
+    el.activeWire.setAttribute('x2', clipX);
+    el.activeWire.setAttribute('stroke-width', strokeW);
+    el.activeWire.setAttribute('stroke', mat.wireColor);
+
+    el.clip2Group.setAttribute('transform', `translate(${clipX}, 114)`);
+    const ctrlX = (clipX + 580) / 2;
+    el.flexLead.setAttribute('d', `M ${clipX} 102 Q ${ctrlX} 68 580 112`);
+    el.benchLengthTag.setAttribute('x', (110 + clipX) / 2);
+    el.benchLengthTag.textContent = `Active Length = ${state.lengthCm} cm`;
+    el.benchAmmeterText.textContent = formatI(I);
+
+    el.resBig.textContent = formatR(R);
+    el.curBig.textContent = formatI(I);
+    el.formulaNumbers.textContent = `${(state.lengthCm / 100).toFixed(2)} m \u00F7 ${state.areaMm2.toFixed(2)} mm\u00B2`;
+
+    if (I > 10) {
+      el.curNote.textContent = 'Very high current! Wire heats up fast';
+      el.curNote.style.color = '#dc2626';
+    } else if (I < 0.3) {
+      el.curNote.textContent = 'Tiny trickle of current';
+      el.curNote.style.color = 'var(--muted)';
+    } else {
+      el.curNote.textContent = 'Steady measurable current';
+      el.curNote.style.color = 'var(--muted)';
+    }
+
+    el.microStatsTag.textContent = `Electron Lanes: ${lanes}  |  Material: ${mat.name}  |  Length: ${state.lengthCm} cm`;
+
+    if (state.lastChanged === 'length') {
+      el.explainTitle.textContent = `Length changed to ${state.lengthCm} cm`;
+      el.explainDesc.textContent = `A longer wire forces electrons to travel further and pass through more metal ions. Resistance is directly proportional to length \u2014 doubling the length doubles the resistance!`;
+    } else if (state.lastChanged === 'area') {
+      el.explainTitle.textContent = `Thickness (Area) changed to ${state.areaMm2.toFixed(2)} mm\u00B2 (${lanes} lane${lanes > 1 ? 's' : ''})`;
+      el.explainDesc.textContent = `A thicker wire opens up more parallel lanes for electrons to flow side by side at once, reducing resistance. A thinner wire squeezes electrons into fewer lanes, increasing resistance!`;
+    } else if (state.lastChanged === 'material') {
+      el.explainTitle.textContent = `Material changed to ${mat.name}`;
+      el.explainDesc.textContent = mat.desc;
+    } else {
+      el.explainTitle.textContent = 'Test Each Factor One at a Time';
+      el.explainDesc.textContent = 'Adjust the Length, Thickness, or Material on the left and watch how the microscopic electron lanes and metal ion obstacles respond.';
+    }
+
+    rebuildMicroParticles();
+  }
+
+  let lastT = performance.now();
+  function animate(now) {
+    const dt = Math.min(0.05, (now - lastT) / 1000);
+    lastT = now;
+
+    const { x, w } = getMicroBox();
+    const mat = MATERIALS[state.material];
+
+    const lenFactor = 60 / state.lengthCm;
+    const matSpeed = Math.max(0.14, Math.min(1.8, Math.pow(1.7e-8 / mat.rho, 0.38) * 1.6));
+    const speedPxPerSec = 42 * lenFactor * matSpeed;
+    const fracSpeed = speedPxPerSec / w;
+
+    for (const e of state.electrons) {
+      e.relX = (e.relX + fracSpeed * dt) % 1;
+      e.phase += dt * (4 + mat.jitter * 4);
+      const px = x + 6 + e.relX * (w - 12);
+      const py = e.baseY + Math.sin(e.phase) * mat.jitter;
+      e.el.setAttribute('cx', px.toFixed(1));
+      e.el.setAttribute('cy', py.toFixed(1));
+    }
+
+    requestAnimationFrame(animate);
+  }
+
+  el.lenSlider.addEventListener('input', e => {
+    state.lengthCm = Number(e.target.value);
+    state.lastChanged = 'length';
+    updateUI();
+  });
+
+  el.areaSlider.addEventListener('input', e => {
+    state.areaMm2 = Number(e.target.value);
+    state.lastChanged = 'area';
+    updateUI();
+  });
+
+  el.matBtns.forEach(btn => {
+    btn.addEventListener('click', () => {
+      el.matBtns.forEach(b => b.classList.remove('active'));
+      btn.classList.add('active');
+      state.material = btn.dataset.mat;
+      state.lastChanged = 'material';
+      updateUI();
+    });
+  });
+
+  function renderTable() {
+    if (state.logs.length === 0) {
+      el.logBody.innerHTML = `<tr><td colspan="4" style="text-align:center; color: var(--muted); padding: 14px;">No readings recorded yet.</td></tr>`;
+      return;
+    }
+    el.logBody.innerHTML = state.logs.map(row => `
+      <tr>
+        <td><strong>${row.mat}</strong></td>
+        <td>${row.len} cm</td>
+        <td>${row.area} mm&sup2;</td>
+        <td style="font-family:monospace; font-weight:700; color: var(--res-col);">${row.res}</td>
+      </tr>
+    `).join('');
+  }
+
+  el.recordBtn.addEventListener('click', () => {
+    const { R, mat } = calcPhysics();
+    state.logs.unshift({
+      mat: mat.name,
+      len: state.lengthCm,
+      area: state.areaMm2.toFixed(2),
+      res: formatR(R)
+    });
+    if (state.logs.length > 10) state.logs.pop();
+    renderTable();
+  });
+
+  el.clearTableBtn.addEventListener('click', () => {
+    state.logs = [];
+    renderTable();
+  });
+
+  updateUI();
+  requestAnimationFrame(animate);
+</script>
+</body>
+</html>
