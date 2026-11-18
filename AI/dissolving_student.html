@@ -1,0 +1,762 @@
+<!DOCTYPE html>
+<html lang="zh-Hant">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <title>科學探究實驗：水溫與溶解時間 - 學生系統（三輪適性對答版）</title>
+  <script src="https://cdn.jsdelivr.net/npm/chart.js@4.4.1/dist/chart.umd.min.js"></script>
+  <style>
+    :root {
+      --primary: #0284c7;
+      --primary-light: #e0f2fe;
+      --success: #16a34a;
+      --warning: #d97706;
+      --bg: #f1f5f9;
+      --card: #ffffff;
+      --text: #1e293b;
+      --muted: #64748b;
+      --border: #cbd5e1;
+    }
+    * { box-sizing: border-box; }
+    body {
+      font-family: "Noto Sans TC", "Microsoft JhengHei", -apple-system, sans-serif;
+      background: var(--bg);
+      color: var(--text);
+      margin: 0;
+      padding: 24px 16px 60px;
+      line-height: 1.6;
+    }
+    .container { max-width: 900px; margin: 0 auto; }
+
+    header {
+      border-bottom: 3px solid var(--primary);
+      padding-bottom: 12px;
+      margin-bottom: 22px;
+      display: flex;
+      justify-content: space-between;
+      align-items: flex-end;
+      flex-wrap: wrap;
+      gap: 12px;
+    }
+    header h1 { margin: 0; font-size: 1.65rem; color: #0f172a; }
+
+    .badge {
+      display: inline-flex;
+      align-items: center;
+      gap: 6px;
+      padding: 4px 12px;
+      border-radius: 999px;
+      font-size: 0.85rem;
+      font-weight: 600;
+    }
+    .b-info { background: var(--primary-light); color: #0369a1; }
+    .b-ok { background: #dcfce7; color: #15803d; }
+    .b-lock { background: #e2e8f0; color: #475569; }
+    .b-turn { background: #ede9fe; color: #6d28d9; }
+
+    .card {
+      background: var(--card);
+      border-radius: 12px;
+      padding: 22px;
+      margin-bottom: 22px;
+      box-shadow: 0 2px 10px rgba(15, 23, 42, 0.06);
+      border-left: 5px solid var(--primary);
+      transition: opacity 0.2s;
+    }
+    .card.locked {
+      opacity: 0.55;
+      pointer-events: none;
+      border-left-color: #94a3b8;
+    }
+    .card h2 {
+      margin: 0 0 14px;
+      font-size: 1.22rem;
+      color: #0369a1;
+      border-bottom: 2px solid #e2e8f0;
+      padding-bottom: 8px;
+      display: flex;
+      justify-content: space-between;
+      align-items: center;
+      flex-wrap: wrap;
+      gap: 8px;
+    }
+
+    label { display: block; font-weight: 600; margin: 12px 0 6px; font-size: 0.95rem; }
+    .hint { font-size: 0.85rem; color: var(--muted); margin-bottom: 6px; }
+    input[type="text"], input[type="number"], textarea {
+      width: 100%;
+      padding: 10px 12px;
+      border: 1px solid var(--border);
+      border-radius: 8px;
+      font-size: 0.95rem;
+      font-family: inherit;
+    }
+    input:focus, textarea:focus {
+      outline: none;
+      border-color: var(--primary);
+      box-shadow: 0 0 0 3px rgba(2, 132, 199, 0.12);
+    }
+    textarea { resize: vertical; min-height: 80px; }
+
+    .btn-row { display: flex; gap: 10px; flex-wrap: wrap; margin-top: 12px; align-items: center; }
+    button {
+      background: var(--primary);
+      color: #fff;
+      border: none;
+      padding: 9px 16px;
+      border-radius: 8px;
+      font-size: 0.93rem;
+      font-weight: 600;
+      cursor: pointer;
+    }
+    button:hover:not(:disabled) { background: #0369a1; }
+    button:disabled { background: #94a3b8; cursor: not-allowed; }
+    button.btn-sec { background: #475569; }
+    button.btn-sec:hover:not(:disabled) { background: #334155; }
+    button.btn-ok { background: var(--success); }
+    button.btn-ok:hover:not(:disabled) { background: #15803d; }
+    button.btn-ghost {
+      background: #f1f5f9;
+      color: #334155;
+      border: 1px solid #cbd5e1;
+      padding: 6px 12px;
+      font-size: 0.85rem;
+    }
+    button.btn-ghost:hover:not(:disabled) { background: #e2e8f0; }
+    button.btn-del { background: #fee2e2; color: #b91c1c; padding: 4px 10px; font-size: 0.8rem; }
+
+    .grid-2 { display: grid; grid-template-columns: 1fr 1fr; gap: 12px; }
+    @media (max-width: 640px) { .grid-2 { grid-template-columns: 1fr; } }
+
+    table { width: 100%; border-collapse: collapse; margin-top: 14px; font-size: 0.95rem; }
+    th, td { border: 1px solid #e2e8f0; padding: 9px; text-align: center; }
+    th { background: #f8fafc; font-weight: 600; }
+
+    .chart-wrapper { position: relative; height: 300px; margin-top: 18px; }
+
+    .ai-box {
+      margin-top: 14px;
+      padding: 14px 16px;
+      border-radius: 10px;
+      background: #f0f9ff;
+      border: 1px solid #bae6fd;
+      border-left: 4px solid #0284c7;
+      white-space: pre-wrap;
+      font-size: 0.95rem;
+    }
+
+    /* 三輪對答時間軸樣式 */
+    .turn-card {
+      border: 1px solid #e2e8f0;
+      border-radius: 10px;
+      padding: 16px;
+      margin-bottom: 16px;
+      background: #fafafa;
+    }
+    .turn-header {
+      font-weight: 700;
+      color: #4338ca;
+      margin-bottom: 10px;
+      display: flex;
+      justify-content: space-between;
+      align-items: center;
+    }
+    .bubble-student {
+      background: #ffffff;
+      border: 1px solid #cbd5e1;
+      border-left: 4px solid #3b82f6;
+      border-radius: 8px;
+      padding: 10px 14px;
+      margin-bottom: 10px;
+      white-space: pre-wrap;
+    }
+    .bubble-ai {
+      background: #f0fdf4;
+      border: 1px solid #bbf7d0;
+      border-left: 4px solid #16a34a;
+      border-radius: 8px;
+      padding: 10px 14px;
+      white-space: pre-wrap;
+    }
+    .active-turn-box {
+      border: 2px solid #6366f1;
+      border-radius: 12px;
+      padding: 18px;
+      background: #ffffff;
+      box-shadow: 0 4px 12px rgba(99, 102, 241, 0.08);
+    }
+
+    .status-msg { margin-top: 8px; font-size: 0.9rem; font-weight: 600; }
+    .status-ok { color: var(--success); }
+    .status-err { color: #dc2626; }
+    .hidden { display: none !important; }
+  </style>
+</head>
+<body>
+  <div class="container">
+    <header>
+      <div>
+        <h1 id="topicTitle">🧪 實驗：水溫與溶解時間的關係 (Temperature vs. Dissolving Time)</h1>
+        <div class="hint" style="margin:4px 0 0;">第一部分：變量設定 → 第二部分：水溫與溶解時間數據紀錄 → 第三部分：與 AI 三輪對答精煉結論</div>
+      </div>
+      <div id="connBadge" class="badge b-info">ℹ️ 系統連線中...</div>
+    </header>
+
+    <!-- 組別設定 -->
+    <section class="card">
+      <h2>組別登入與進度同步</h2>
+      <label for="groupName">組別名稱（請統一格式，如「第一組」）：</label>
+      <div style="display:flex; gap:10px; flex-wrap:wrap;">
+        <input type="text" id="groupName" placeholder="例如：第一組" style="flex:1; min-width:200px;" />
+        <button type="button" class="btn-sec" onclick="loadGroupProgress()">讀取此組雲端進度</button>
+      </div>
+      <div id="sysStatus" class="status-msg"></div>
+    </section>
+
+    <!-- 第一部分：實驗變量設定 -->
+    <section class="card" id="part1Card">
+      <h2>
+        <span>(第一部分) 實驗變量設定</span>
+        <span id="p1Badge" class="badge b-info">待提交</span>
+      </h2>
+      <label for="varIndependent">自變量（實驗中刻意改變的因素）：</label>
+      <input type="text" id="varIndependent" placeholder="例如：水溫 (°C)" />
+
+      <label for="varDependent">因變量（實驗中要量測的結果指標）：</label>
+      <input type="text" id="varDependent" placeholder="例如：物質完全溶解所需的時間 (秒)" />
+
+      <label for="varControl">控制變量（必須保持不變的因素）：</label>
+      <input type="text" id="varControl" placeholder="例如：水的體積、溶質種類與質量、攪拌方式與速度、燒杯大小..." />
+
+      <div class="btn-row">
+        <button type="button" id="btnSaveVars" onclick="submitVariables()">提交變量並取得 AI 建議</button>
+      </div>
+      <div id="p1Status" class="status-msg"></div>
+
+      <div id="varFeedbackBox" class="ai-box hidden">
+        <strong>🤖 AI 助教對變量設定的建議：</strong>
+        <div id="varFeedbackText" style="margin-top:4px;"></div>
+      </div>
+    </section>
+
+    <!-- 第二部分：實驗數據輸入 -->
+    <section class="card locked" id="part2Card">
+      <h2>
+        <span>(第二部分) 實驗數據紀錄與即時繪圖</span>
+        <span id="p2Badge" class="badge b-lock">需先提交第一部分</span>
+      </h2>
+      <div class="grid-2">
+        <div>
+          <label for="inputX" id="labelInputX">水溫 (°C)：</label>
+          <input type="number" id="inputX" step="any" placeholder="輸入水溫數值，例如：25" />
+        </div>
+        <div>
+          <label for="inputY" id="labelInputY">溶解時間 (秒)：</label>
+          <input type="number" id="inputY" step="any" placeholder="輸入溶解時間，例如：48" />
+        </div>
+      </div>
+      <div class="btn-row">
+        <button type="button" onclick="addPoint()">＋ 新增數據</button>
+        <button type="button" class="btn-ok" id="btnSaveData" onclick="submitData()">提交實驗數據（至少 2 筆）</button>
+      </div>
+      <div id="p2Status" class="status-msg"></div>
+
+      <table>
+        <thead>
+          <tr>
+            <th id="thX">水溫 (°C)</th>
+            <th id="thY">溶解時間 (秒)</th>
+            <th style="width:90px;">操作</th>
+          </tr>
+        </thead>
+        <tbody id="dataTableBody">
+          <tr><td colspan="3" style="color:#94a3b8;">尚未新增數據</td></tr>
+        </tbody>
+      </table>
+
+      <div class="chart-wrapper">
+        <canvas id="studentChart"></canvas>
+      </div>
+    </section>
+
+    <!-- 第三部分：結論與 AI 三輪適性對答 -->
+    <section class="card locked" id="part3Card">
+      <h2>
+        <span>(第三部分) 實驗結論與 AI 三輪深度對話</span>
+        <span id="p3Badge" class="badge b-lock">需先提交第二部分數據</span>
+      </h2>
+      <p class="hint">
+        系統會根據你們的結論給予「改善建議」或「進一步思考提問」。請完成 <strong>共 3 輪對答</strong>：每一輪都要回答 AI 的提問並改寫出更完整的結論！
+      </p>
+
+      <!-- 已完成的對答紀錄區 -->
+      <div id="dialogueHistoryContainer"></div>
+
+      <!-- 當前進行中的輪次輸入區 -->
+      <div id="activeTurnContainer" class="active-turn-box hidden">
+        <div class="turn-header">
+          <span id="activeTurnTitle">📝 第 1 輪：寫下初步實驗結論</span>
+          <span id="turnCounterBadge" class="badge b-turn">進度：第 1 / 3 輪</span>
+        </div>
+
+        <!-- 輔助按鈕區（第 2、3 輪顯示） -->
+        <div id="turnHelpers" class="btn-row hidden" style="margin-top:0; margin-bottom:10px;">
+          <button type="button" class="btn-ghost" onclick="copyPrevConclusion()">📋 帶入上一版結論來改寫</button>
+          <button type="button" class="btn-ghost" onclick="requestTurnHint()">💡 看不懂 AI 問題？點我看白話提示</button>
+        </div>
+
+        <div id="turnHintBox" class="ai-box hidden" style="background:#fdf4ff; border-color:#f0abfc; border-left-color:#c026d3; margin-bottom:12px;">
+          <strong>💡 白話小提示：</strong>
+          <div id="turnHintText" style="margin-top:4px;"></div>
+        </div>
+
+        <!-- 第 2、3 輪：回答 AI 提問 -->
+        <div id="replyFieldWrap" class="hidden">
+          <label for="studentReply">1. 回答 AI 上一輪的提問或建議：</label>
+          <textarea id="studentReply" placeholder="請針對 AI 上方的提問寫出你們的回答或想法..."></textarea>
+        </div>
+
+        <!-- 第 1、2、3 輪：撰寫或改寫結論 -->
+        <div>
+          <label for="studentConclusion" id="conclusionLabel">請輸入你們的實驗結論：</label>
+          <textarea id="studentConclusion" placeholder="請根據上方「水溫 vs 溶解時間」的數據圖表，寫出實驗結論（例如：水溫如何影響溶解時間，並試著引用數據說明）..."></textarea>
+        </div>
+
+        <div class="btn-row">
+          <button type="button" class="btn-ok" id="btnSubmitTurn" onclick="submitCurrentTurn()">送出第 1 輪結論給 AI</button>
+        </div>
+        <div id="p3Status" class="status-msg"></div>
+      </div>
+
+      <!-- 全部完成提示 -->
+      <div id="completedBanner" class="ai-box hidden" style="background:#dcfce7; border-color:#86efac; border-left-color:#16a34a;">
+        <strong>🎉 恭喜！本組已完成全部 3 輪與 AI 的對話及結論修訂，完整歷程已送出！</strong>
+      </div>
+    </section>
+  </div>
+
+  <script>
+    // ⚠️ 【教師設定區】請於發布學生網頁前，將 Google Apps Script Web App 網址填入下方引號內
+    // 學生網頁不會顯示任何 Google Sheet 或後端網址，亦無需學生手動輸入
+    const GAS_URL = "https://script.google.com/macros/s/AKfycbx3GVSopROksvlzauvZKAV_5Ms8-aLDnsuFonPT2mcOSeMdDJeYm66iibExBxWXQiuJ/exec";
+
+    const DEFAULT_CONFIG = {
+      experimentTopic: '水溫與溶解時間的關係 (Temperature vs. Dissolving Time)',
+      xAxisLabel: '水溫 (°C)',
+      yAxisLabel: '溶解時間 (秒)'
+    };
+
+    let expConfig = { ...DEFAULT_CONFIG };
+    let dataPoints = [];
+    let dialogueHistory = [];
+    let chartInstance = null;
+
+    window.addEventListener('DOMContentLoaded', () => {
+      initChart();
+      applyConfig(expConfig);
+      if (!GAS_URL) {
+        document.getElementById('connBadge').textContent = '⚠️ 系統尚未就緒（請聯繫教師）';
+      } else {
+        fetchConfig();
+      }
+    });
+
+    async function apiPost(payload) {
+      if (!GAS_URL) {
+        throw new Error('系統尚未設定完成，請通知教師。');
+      }
+      const res = await fetch(GAS_URL, {
+        method: 'POST',
+        redirect: 'follow',
+        headers: { 'Content-Type': 'text/plain;charset=utf-8' },
+        body: JSON.stringify(payload)
+      });
+      if (!res.ok) throw new Error('HTTP ' + res.status);
+      const data = await res.json();
+      if (!data.ok) throw new Error(data.error || '系統處理錯誤');
+      return data;
+    }
+
+    function applyConfig(cfg) {
+      if (!cfg) return;
+      expConfig = {
+        experimentTopic: cfg.experimentTopic || DEFAULT_CONFIG.experimentTopic,
+        xAxisLabel: cfg.xAxisLabel || DEFAULT_CONFIG.xAxisLabel,
+        yAxisLabel: cfg.yAxisLabel || DEFAULT_CONFIG.yAxisLabel
+      };
+      document.getElementById('topicTitle').textContent = '🧪 實驗：' + expConfig.experimentTopic;
+      document.getElementById('labelInputX').textContent = expConfig.xAxisLabel + '：';
+      document.getElementById('labelInputY').textContent = expConfig.yAxisLabel + '：';
+      document.getElementById('thX').textContent = expConfig.xAxisLabel;
+      document.getElementById('thY').textContent = expConfig.yAxisLabel;
+      if (chartInstance) {
+        chartInstance.options.scales.x.title.text = expConfig.xAxisLabel;
+        chartInstance.options.scales.y.title.text = expConfig.yAxisLabel;
+        chartInstance.data.datasets[0].label = expConfig.yAxisLabel;
+        chartInstance.update();
+      }
+    }
+
+    async function fetchConfig() {
+      try {
+        const res = await apiPost({ action: 'get_config' });
+        applyConfig(res.config);
+        document.getElementById('connBadge').className = 'badge b-ok';
+        document.getElementById('connBadge').textContent = '✓ 已連線課堂系統';
+      } catch (e) {
+        document.getElementById('connBadge').textContent = '⚠️ 連線失敗，請重新整理或聯繫教師';
+      }
+    }
+
+    function setStatus(id, msg, ok) {
+      const el = document.getElementById(id);
+      el.textContent = msg;
+      el.className = 'status-msg ' + (ok ? 'status-ok' : 'status-err');
+    }
+
+    function getGroupName() {
+      return document.getElementById('groupName').value.trim();
+    }
+
+    // 載入雲端既有進度
+    async function loadGroupProgress() {
+      const groupName = getGroupName();
+      if (!groupName) return setStatus('sysStatus', '請先輸入組別名稱！', false);
+      setStatus('sysStatus', '讀取中...', true);
+      try {
+        const res = await apiPost({ action: 'get_group', groupName });
+        applyConfig(res.config);
+        if (!res.group) {
+          setStatus('sysStatus', `目前尚無「${groupName}」紀錄，請從第一部分開始填寫。`, true);
+          return;
+        }
+        const g = res.group;
+        if (g.variables && g.variables.independent) {
+          document.getElementById('varIndependent').value = g.variables.independent || '';
+          document.getElementById('varDependent').value = g.variables.dependent || '';
+          document.getElementById('varControl').value = g.variables.control || '';
+          unlockPart2();
+        }
+        if (g.aiVarFeedback) {
+          document.getElementById('varFeedbackText').textContent = g.aiVarFeedback;
+          document.getElementById('varFeedbackBox').classList.remove('hidden');
+        }
+        if (Array.isArray(g.dataPoints) && g.dataPoints.length > 0) {
+          dataPoints = g.dataPoints;
+          renderDataTable();
+          updateChart();
+          if (dataPoints.length >= 2) unlockPart3();
+        }
+        if (Array.isArray(g.dialogueHistory)) {
+          dialogueHistory = g.dialogueHistory;
+          renderDialogueSection();
+        }
+        setStatus('sysStatus', `✓ 已載入「${groupName}」進度（最後更新：${g.updatedAt}）。`, true);
+      } catch (e) {
+        setStatus('sysStatus', '讀取失敗：' + e.message, false);
+      }
+    }
+
+    // 第一部分：提交變量
+    async function submitVariables() {
+      const groupName = getGroupName();
+      if (!groupName) return setStatus('p1Status', '請先輸入組別名稱！', false);
+      const independent = document.getElementById('varIndependent').value.trim();
+      const dependent = document.getElementById('varDependent').value.trim();
+      const control = document.getElementById('varControl').value.trim();
+      if (!independent || !dependent || !control) {
+        return setStatus('p1Status', '請完整填寫自變量、因變量與控制變量！', false);
+      }
+
+      const btn = document.getElementById('btnSaveVars');
+      btn.disabled = true;
+      btn.textContent = '儲存並請 AI 檢視中...';
+      try {
+        const res = await apiPost({
+          action: 'save_variables',
+          groupName,
+          variables: { independent, dependent, control }
+        });
+        document.getElementById('varFeedbackText').textContent = res.feedback;
+        document.getElementById('varFeedbackBox').classList.remove('hidden');
+        unlockPart2();
+        setStatus('p1Status', '✓ 已儲存變量並取得 AI 建議（若有需要可直接修改再重新提交）。已解鎖第二部分！', true);
+      } catch (e) {
+        setStatus('p1Status', '提交失敗：' + e.message, false);
+      } finally {
+        btn.disabled = false;
+        btn.textContent = '更新變量並重新取得 AI 建議';
+      }
+    }
+
+    function unlockPart2() {
+      document.getElementById('p1Badge').className = 'badge b-ok';
+      document.getElementById('p1Badge').textContent = '✓ 已提交';
+      document.getElementById('part2Card').classList.remove('locked');
+      const b2 = document.getElementById('p2Badge');
+      if (b2.textContent.includes('需先提交')) {
+        b2.className = 'badge b-info';
+        b2.textContent = '進行中';
+      }
+    }
+
+    function unlockPart3() {
+      document.getElementById('p2Badge').className = 'badge b-ok';
+      document.getElementById('p2Badge').textContent = '✓ 數據已提交';
+      document.getElementById('part3Card').classList.remove('locked');
+      renderDialogueSection();
+    }
+
+    // 第二部分：數據操作
+    function addPoint() {
+      const x = parseFloat(document.getElementById('inputX').value);
+      const y = parseFloat(document.getElementById('inputY').value);
+      if (isNaN(x) || isNaN(y)) {
+        return setStatus('p2Status', '請輸入有效的數字！', false);
+      }
+      if (y < 0) {
+        return setStatus('p2Status', '溶解時間不可小於 0！', false);
+      }
+      const idx = dataPoints.findIndex(p => p.x === x);
+      if (idx !== -1) dataPoints[idx].y = y;
+      else dataPoints.push({ x, y });
+      dataPoints.sort((a, b) => a.x - b.x);
+      document.getElementById('inputX').value = '';
+      document.getElementById('inputY').value = '';
+      setStatus('p2Status', '', true);
+      renderDataTable();
+      updateChart();
+    }
+
+    function removePoint(idx) {
+      dataPoints.splice(idx, 1);
+      renderDataTable();
+      updateChart();
+    }
+
+    function renderDataTable() {
+      const tbody = document.getElementById('dataTableBody');
+      if (dataPoints.length === 0) {
+        tbody.innerHTML = '<tr><td colspan="3" style="color:#94a3b8;">尚未新增數據</td></tr>';
+        return;
+      }
+      tbody.innerHTML = dataPoints.map((p, idx) => `
+        <tr>
+          <td>${p.x}</td>
+          <td>${p.y}</td>
+          <td><button type="button" class="btn-del" onclick="removePoint(${idx})">刪除</button></td>
+        </tr>
+      `).join('');
+    }
+
+    function initChart() {
+      const ctx = document.getElementById('studentChart').getContext('2d');
+      chartInstance = new Chart(ctx, {
+        type: 'line',
+        data: {
+          labels: [],
+          datasets: [{
+            label: expConfig.yAxisLabel,
+            data: [],
+            borderColor: '#ef4444',
+            backgroundColor: 'rgba(239, 68, 68, 0.14)',
+            borderWidth: 2.5,
+            pointRadius: 5,
+            pointBackgroundColor: '#fff',
+            pointBorderColor: '#ef4444',
+            fill: true,
+            tension: 0
+          }]
+        },
+        options: {
+          responsive: true,
+          maintainAspectRatio: false,
+          scales: {
+            x: { title: { display: true, text: expConfig.xAxisLabel } },
+            y: { beginAtZero: true, title: { display: true, text: expConfig.yAxisLabel } }
+          }
+        }
+      });
+    }
+
+    function updateChart() {
+      if (!chartInstance) return;
+      chartInstance.data.labels = dataPoints.map(p => p.x);
+      chartInstance.data.datasets[0].data = dataPoints.map(p => p.y);
+      chartInstance.update();
+    }
+
+    async function submitData() {
+      const groupName = getGroupName();
+      if (!groupName) return setStatus('p2Status', '缺少組別名稱！', false);
+      if (dataPoints.length < 2) {
+        return setStatus('p2Status', '請至少輸入 2 筆數據再提交！', false);
+      }
+      const btn = document.getElementById('btnSaveData');
+      btn.disabled = true;
+      btn.textContent = '同步中...';
+      try {
+        await apiPost({ action: 'save_data', groupName, dataPoints });
+        unlockPart3();
+        setStatus('p2Status', '✓ 數據已儲存，第三部分已解鎖！', true);
+      } catch (e) {
+        setStatus('p2Status', '儲存失敗：' + e.message, false);
+      } finally {
+        btn.disabled = false;
+        btn.textContent = '提交實驗數據（至少 2 筆）';
+      }
+    }
+
+    // 第三部分：渲染三輪對答歷程與目前輪次
+    function renderDialogueSection() {
+      const container = document.getElementById('dialogueHistoryContainer');
+      container.innerHTML = '';
+
+      dialogueHistory.forEach(item => {
+        const card = document.createElement('div');
+        card.className = 'turn-card';
+
+        const header = document.createElement('div');
+        header.className = 'turn-header';
+        header.innerHTML = `<span>💬 第 ${item.turn} 輪對答</span><span style="font-size:0.8rem; color:#64748b;">${item.timestamp || ''}</span>`;
+        card.appendChild(header);
+
+        const stuBox = document.createElement('div');
+        stuBox.className = 'bubble-student';
+        let stuContent = '';
+        if (item.studentReply) {
+          stuContent += `【回答 AI 提問】\n${item.studentReply}\n\n`;
+        }
+        stuContent += `【結論（第 ${item.turn} 版）】\n${item.studentConclusion}`;
+        stuBox.textContent = stuContent;
+        card.appendChild(stuBox);
+
+        const aiBox = document.createElement('div');
+        aiBox.className = 'bubble-ai';
+        aiBox.textContent = `🤖 【AI 第 ${item.turn} 輪回應】\n${item.aiResponse}`;
+        card.appendChild(aiBox);
+
+        container.appendChild(card);
+      });
+
+      const currentTurn = dialogueHistory.length + 1;
+      const activeBox = document.getElementById('activeTurnContainer');
+      const completedBanner = document.getElementById('completedBanner');
+      const p3Badge = document.getElementById('p3Badge');
+
+      if (currentTurn > 3) {
+        activeBox.classList.add('hidden');
+        completedBanner.classList.remove('hidden');
+        p3Badge.className = 'badge b-ok';
+        p3Badge.textContent = '✓ 已完成 3 輪對答';
+        return;
+      }
+
+      completedBanner.classList.add('hidden');
+      activeBox.classList.remove('hidden');
+      document.getElementById('turnHintBox').classList.add('hidden');
+      document.getElementById('studentReply').value = '';
+      document.getElementById('studentConclusion').value = '';
+      setStatus('p3Status', '', true);
+
+      p3Badge.className = 'badge b-turn';
+      p3Badge.textContent = `進行中：第 ${currentTurn} / 3 輪`;
+      document.getElementById('turnCounterBadge').textContent = `進度：第 ${currentTurn} / 3 輪`;
+
+      const replyWrap = document.getElementById('replyFieldWrap');
+      const helpers = document.getElementById('turnHelpers');
+      const title = document.getElementById('activeTurnTitle');
+      const concLabel = document.getElementById('conclusionLabel');
+      const btn = document.getElementById('btnSubmitTurn');
+
+      btn.disabled = false; // 確保進入每一輪時按鈕皆可點擊
+
+      if (currentTurn === 1) {
+        title.textContent = '📝 第 1 輪：寫下你們的初步實驗結論';
+        replyWrap.classList.add('hidden');
+        helpers.classList.add('hidden');
+        concLabel.textContent = '請輸入實驗結論（第 1 版）：';
+        btn.textContent = '送出第 1 輪結論給 AI';
+      } else if (currentTurn === 2) {
+        title.textContent = '🔄 第 2 輪：回答 AI 提問並改寫結論';
+        replyWrap.classList.remove('hidden');
+        helpers.classList.remove('hidden');
+        concLabel.textContent = '2. 改寫後的實驗結論（第 2 版）：';
+        btn.textContent = '送出第 2 輪回答與改寫結論';
+      } else {
+        title.textContent = '🏆 第 3 輪（最終輪）：回答 AI 提問並寫出最終結論';
+        replyWrap.classList.remove('hidden');
+        helpers.classList.remove('hidden');
+        concLabel.textContent = '2. 精煉後的最終實驗結論（第 3 版）：';
+        btn.textContent = '送出第 3 輪最終結論（完成對答）';
+      }
+    }
+
+    function copyPrevConclusion() {
+      if (dialogueHistory.length === 0) return;
+      const prev = dialogueHistory[dialogueHistory.length - 1].studentConclusion || '';
+      const box = document.getElementById('studentConclusion');
+      box.value = prev;
+      box.focus();
+    }
+
+    async function requestTurnHint() {
+      const groupName = getGroupName();
+      const box = document.getElementById('turnHintBox');
+      const txt = document.getElementById('turnHintText');
+      box.classList.remove('hidden');
+      txt.textContent = '⏳ 正在將 AI 的提問轉換為白話小提示...';
+      try {
+        const res = await apiPost({ action: 'get_turn_hint', groupName });
+        txt.textContent = res.hint;
+      } catch (e) {
+        txt.textContent = '取得提示失敗：' + e.message;
+      }
+    }
+
+    async function submitCurrentTurn() {
+      const groupName = getGroupName();
+      const currentTurn = dialogueHistory.length + 1;
+      if (currentTurn > 3) return;
+
+      const studentReply = document.getElementById('studentReply').value.trim();
+      const studentConclusion = document.getElementById('studentConclusion').value.trim();
+
+      if (currentTurn > 1 && studentReply.length < 5) {
+        return setStatus('p3Status', '請先回答 AI 上一輪的提問（至少 5 個字）！', false);
+      }
+      if (studentConclusion.length < 6) {
+        return setStatus('p3Status', '結論內容請至少寫 6 個字以上！', false);
+      }
+      if (currentTurn > 1) {
+        const prevItem = dialogueHistory[currentTurn - 2];
+        if (prevItem && prevItem.studentConclusion.trim() === studentConclusion) {
+          return setStatus('p3Status', '⚠️ 結論內容與上一輪完全一樣！請根據 AI 建議改寫或補充內容再送出。', false);
+        }
+      }
+
+      const btn = document.getElementById('btnSubmitTurn');
+      btn.disabled = true;
+      btn.textContent = 'AI 思考回應中...';
+      setStatus('p3Status', '', true);
+
+      try {
+        const res = await apiPost({
+          action: 'submit_dialogue_turn',
+          groupName,
+          turn: currentTurn,
+          studentReply,
+          studentConclusion
+        });
+        dialogueHistory = res.group.dialogueHistory;
+        renderDialogueSection();
+      } catch (e) {
+        setStatus('p3Status', '送出失敗：' + e.message, false);
+        btn.textContent = `重試送出第 ${currentTurn} 輪`;
+      } finally {
+        btn.disabled = false;
+      }
+    }
+  </script>
+</body>
+</html>
