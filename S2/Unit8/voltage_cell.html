@@ -1,0 +1,1082 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <title>Voltage &amp; Cells: Interactive Voltmeter Lab</title>
+  <style>
+    :root {
+      --bg: #f4f7fb;
+      --card: #ffffff;
+      --text: #1e293b;
+      --muted: #64748b;
+      --primary: #2563eb;
+      --primary-dark: #1d4ed8;
+      --pos: #dc2626;
+      --neg: #1e293b;
+      --success: #16a34a;
+      --warning: #d97706;
+      --border: #e2e8f0;
+      --shadow: 0 10px 25px -5px rgba(15, 23, 42, 0.08);
+    }
+
+    * {
+      box-sizing: border-box;
+      margin: 0;
+      padding: 0;
+    }
+
+    body {
+      font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, Helvetica, Arial, sans-serif;
+      background: var(--bg);
+      color: var(--text);
+      line-height: 1.6;
+      padding: 20px;
+    }
+
+    .container {
+      max-width: 1140px;
+      margin: 0 auto;
+    }
+
+    header {
+      text-align: center;
+      margin-bottom: 28px;
+    }
+
+    header h1 {
+      font-size: 2rem;
+      color: #0f172a;
+      margin-bottom: 8px;
+    }
+
+    header p {
+      color: var(--muted);
+      max-width: 680px;
+      margin: 0 auto;
+    }
+
+    /* Info Cards */
+    .info-grid {
+      display: grid;
+      grid-template-columns: repeat(auto-fit, minmax(260px, 1fr));
+      gap: 16px;
+      margin-bottom: 24px;
+    }
+
+    .info-card {
+      background: var(--card);
+      border: 1px solid var(--border);
+      border-radius: 12px;
+      padding: 18px;
+      box-shadow: 0 2px 6px rgba(0, 0, 0, 0.03);
+    }
+
+    .info-card h3 {
+      font-size: 1.05rem;
+      margin-bottom: 6px;
+      color: var(--primary-dark);
+      display: flex;
+      align-items: center;
+      gap: 8px;
+    }
+
+    .info-card p {
+      font-size: 0.92rem;
+      color: #475569;
+    }
+
+    /* Main Workbench */
+    .lab-panel {
+      background: var(--card);
+      border: 1px solid var(--border);
+      border-radius: 16px;
+      padding: 24px;
+      box-shadow: var(--shadow);
+      margin-bottom: 24px;
+    }
+
+    .controls-bar {
+      display: flex;
+      flex-wrap: wrap;
+      justify-content: space-between;
+      align-items: center;
+      gap: 14px;
+      padding-bottom: 18px;
+      border-bottom: 1px solid var(--border);
+      margin-bottom: 22px;
+    }
+
+    .control-group {
+      display: flex;
+      align-items: center;
+      gap: 10px;
+      flex-wrap: wrap;
+    }
+
+    .btn {
+      padding: 8px 14px;
+      border: none;
+      border-radius: 8px;
+      font-size: 0.9rem;
+      font-weight: 600;
+      cursor: pointer;
+      transition: all 0.15s ease;
+      display: inline-flex;
+      align-items: center;
+      gap: 6px;
+    }
+
+    .btn-primary {
+      background: var(--primary);
+      color: white;
+    }
+    .btn-primary:hover:not(:disabled) {
+      background: var(--primary-dark);
+    }
+
+    .btn-secondary {
+      background: #e2e8f0;
+      color: var(--text);
+    }
+    .btn-secondary:hover:not(:disabled) {
+      background: #cbd5e1;
+    }
+
+    .btn-success {
+      background: var(--success);
+      color: white;
+    }
+    .btn-success:hover {
+      background: #15803d;
+    }
+
+    .btn-preset {
+      background: #eff6ff;
+      color: var(--primary-dark);
+      border: 1px solid #bfdbfe;
+      font-size: 0.82rem;
+      padding: 6px 10px;
+    }
+    .btn-preset:hover {
+      background: #dbeafe;
+    }
+
+    .btn:disabled {
+      opacity: 0.45;
+      cursor: not-allowed;
+    }
+
+    .lab-grid {
+      display: grid;
+      grid-template-columns: 1.75fr 1fr;
+      gap: 22px;
+      align-items: stretch;
+    }
+
+    @media (max-width: 900px) {
+      .lab-grid {
+        grid-template-columns: 1fr;
+      }
+    }
+
+    /* Circuit Area */
+    .circuit-stage {
+      background: #f8fafc;
+      border: 2px dashed #cbd5e1;
+      border-radius: 14px;
+      padding: 18px;
+      display: flex;
+      flex-direction: column;
+      justify-content: space-between;
+      position: relative;
+      min-height: 300px;
+    }
+
+    .stage-label {
+      font-size: 0.82rem;
+      text-transform: uppercase;
+      letter-spacing: 0.05em;
+      color: var(--muted);
+      font-weight: 700;
+      margin-bottom: 12px;
+      display: flex;
+      justify-content: space-between;
+      align-items: center;
+      gap: 8px;
+      flex-wrap: wrap;
+    }
+
+    .cells-track-wrapper {
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      flex: 1;
+      padding: 20px 0 12px;
+      overflow-x: auto;
+    }
+
+    .wire-lead {
+      height: 5px;
+      width: 28px;
+      border-radius: 3px;
+      position: relative;
+      flex-shrink: 0;
+    }
+
+    .wire-black {
+      background: #1e293b;
+    }
+
+    .wire-red {
+      background: #dc2626;
+    }
+
+    .wire-label {
+      position: absolute;
+      top: -22px;
+      font-size: 0.72rem;
+      font-weight: 700;
+      white-space: nowrap;
+    }
+    .wire-black .wire-label {
+      left: 0;
+      color: #1e293b;
+    }
+    .wire-red .wire-label {
+      right: 0;
+      color: #dc2626;
+    }
+
+    .cells-container {
+      display: flex;
+      flex-direction: row;
+      flex-wrap: nowrap;
+      align-items: center;
+      justify-content: center;
+      gap: 8px;
+      background: #e2e8f0;
+      padding: 12px 14px;
+      border-radius: 12px;
+      border: 2px solid #94a3b8;
+    }
+
+    /* Individual Cell Component */
+    .cell-unit {
+      display: flex;
+      flex-direction: column;
+      align-items: center;
+      gap: 7px;
+      flex-shrink: 0;
+    }
+
+    .battery-graphic {
+      width: 96px;
+      height: 48px;
+      display: flex;
+      align-items: center;
+      cursor: pointer;
+      transition: transform 0.2s ease;
+      user-select: none;
+    }
+
+    .battery-graphic:hover {
+      transform: translateY(-2px);
+    }
+
+    .battery-graphic.reversed {
+      flex-direction: row-reverse;
+    }
+
+    .battery-body {
+      flex: 1;
+      height: 100%;
+      background: linear-gradient(180deg, #334155 0%, #0f172a 100%);
+      border-radius: 6px;
+      display: flex;
+      align-items: center;
+      justify-content: space-between;
+      padding: 0 7px;
+      color: white;
+      font-weight: 700;
+      font-size: 0.82rem;
+      border: 2px solid #475569;
+      position: relative;
+      overflow: hidden;
+    }
+
+    .battery-graphic.reversed .battery-body {
+      flex-direction: row-reverse;
+    }
+
+    .battery-cap-accent {
+      position: absolute;
+      top: 0;
+      bottom: 0;
+      width: 28%;
+      background: linear-gradient(180deg, #f59e0b 0%, #b45309 100%);
+      right: 0;
+    }
+
+    .battery-graphic.reversed .battery-cap-accent {
+      right: auto;
+      left: 0;
+    }
+
+    .battery-nub {
+      width: 7px;
+      height: 20px;
+      background: linear-gradient(180deg, #fcd34d 0%, #d97706 100%);
+      border-radius: 0 4px 4px 0;
+      border: 1px solid #92400e;
+    }
+
+    .battery-graphic.reversed .battery-nub {
+      border-radius: 4px 0 0 4px;
+    }
+
+    .term-symbol {
+      z-index: 2;
+      font-size: 0.95rem;
+      font-weight: 800;
+    }
+
+    .term-plus {
+      color: #fff;
+      text-shadow: 0 1px 2px rgba(0, 0, 0, 0.5);
+    }
+
+    .term-minus {
+      color: #cbd5e1;
+    }
+
+    .volt-tag {
+      z-index: 2;
+      font-size: 0.7rem;
+      background: rgba(255, 255, 255, 0.15);
+      padding: 2px 4px;
+      border-radius: 4px;
+    }
+
+    .flip-btn {
+      font-size: 0.74rem;
+      padding: 4px 9px;
+      border-radius: 6px;
+      border: 1px solid #cbd5e1;
+      background: white;
+      color: var(--text);
+      cursor: pointer;
+      font-weight: 600;
+      white-space: nowrap;
+    }
+
+    .flip-btn:hover {
+      background: #f1f5f9;
+      border-color: #94a3b8;
+    }
+
+    .dir-badge {
+      font-size: 0.72rem;
+      font-weight: 700;
+      padding: 2px 8px;
+      border-radius: 99px;
+      white-space: nowrap;
+    }
+    .dir-forward {
+      background: #dcfce7;
+      color: #166534;
+    }
+    .dir-reverse {
+      background: #fee2e2;
+      color: #991b1b;
+    }
+
+    @media (max-width: 560px) {
+      .wire-lead {
+        width: 14px;
+      }
+      .wire-label {
+        font-size: 0.64rem;
+      }
+      .cells-container {
+        gap: 5px;
+        padding: 10px 8px;
+      }
+      .battery-graphic {
+        width: 68px;
+        height: 40px;
+      }
+      .volt-tag {
+        display: none;
+      }
+      .dir-badge {
+        font-size: 0.64rem;
+        padding: 2px 5px;
+      }
+      .flip-btn {
+        font-size: 0.66rem;
+        padding: 3px 6px;
+      }
+    }
+
+    /* Math Breakdown */
+    .math-box {
+      background: white;
+      border: 1px solid var(--border);
+      border-radius: 10px;
+      padding: 12px 16px;
+      margin-top: 14px;
+      text-align: center;
+    }
+
+    .math-label {
+      font-size: 0.78rem;
+      color: var(--muted);
+      margin-bottom: 4px;
+      font-weight: 600;
+    }
+
+    .math-equation {
+      font-family: "Courier New", Courier, monospace;
+      font-size: 1.05rem;
+      font-weight: 700;
+      color: #0f172a;
+      display: flex;
+      flex-wrap: wrap;
+      justify-content: center;
+      align-items: center;
+      gap: 6px;
+    }
+
+    .eq-chip {
+      padding: 2px 8px;
+      border-radius: 6px;
+      font-size: 0.95rem;
+    }
+
+    .eq-pos {
+      background: #dcfce7;
+      color: #166534;
+    }
+
+    .eq-neg {
+      background: #fee2e2;
+      color: #991b1b;
+    }
+
+    .eq-total {
+      background: #dbeafe;
+      color: #1e40af;
+      padding: 3px 10px;
+      border: 1px solid #93c5fd;
+    }
+
+    /* Voltmeter Device */
+    .voltmeter-box {
+      background: linear-gradient(145deg, #1e293b, #0f172a);
+      border-radius: 16px;
+      padding: 20px;
+      color: white;
+      display: flex;
+      flex-direction: column;
+      justify-content: space-between;
+      align-items: center;
+      box-shadow: inset 0 2px 6px rgba(255, 255, 255, 0.1), 0 8px 20px rgba(0, 0, 0, 0.15);
+    }
+
+    .meter-header {
+      width: 100%;
+      display: flex;
+      justify-content: space-between;
+      align-items: center;
+      font-size: 0.85rem;
+      color: #94a3b8;
+      font-weight: 700;
+      letter-spacing: 0.05em;
+    }
+
+    .meter-symbol {
+      width: 28px;
+      height: 28px;
+      border: 2px solid #38bdf8;
+      color: #38bdf8;
+      border-radius: 50%;
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      font-weight: 800;
+    }
+
+    .analog-dial {
+      width: 100%;
+      max-width: 240px;
+      margin: 10px 0;
+    }
+
+    .digital-screen {
+      background: #064e3b;
+      border: 3px solid #334155;
+      border-radius: 8px;
+      width: 100%;
+      padding: 12px;
+      text-align: center;
+      box-shadow: inset 0 2px 8px rgba(0, 0, 0, 0.6);
+      margin-bottom: 12px;
+    }
+
+    .digital-value {
+      font-family: "Courier New", Courier, monospace;
+      font-size: 2.1rem;
+      font-weight: 800;
+      color: #34d399;
+      text-shadow: 0 0 8px rgba(52, 211, 153, 0.4);
+    }
+
+    .digital-sub {
+      font-size: 0.78rem;
+      color: #a7f3d0;
+      margin-top: 2px;
+    }
+
+    .meter-terminals {
+      display: flex;
+      justify-content: space-around;
+      width: 100%;
+      padding-top: 8px;
+      border-top: 1px solid #334155;
+    }
+
+    .terminal-jack {
+      display: flex;
+      align-items: center;
+      gap: 6px;
+      font-size: 0.8rem;
+      color: #cbd5e1;
+    }
+
+    .jack-circle {
+      width: 16px;
+      height: 16px;
+      border-radius: 50%;
+      border: 3px solid #94a3b8;
+    }
+    .jack-black { background: #000; }
+    .jack-red { background: #dc2626; }
+
+    /* Observations & Quiz */
+    .bottom-grid {
+      display: grid;
+      grid-template-columns: 1.2fr 1fr;
+      gap: 24px;
+    }
+
+    @media (max-width: 850px) {
+      .bottom-grid {
+        grid-template-columns: 1fr;
+      }
+    }
+
+    .card-panel {
+      background: var(--card);
+      border: 1px solid var(--border);
+      border-radius: 14px;
+      padding: 20px;
+      box-shadow: 0 2px 10px rgba(0, 0, 0, 0.04);
+    }
+
+    .card-panel h2 {
+      font-size: 1.15rem;
+      margin-bottom: 12px;
+      color: #0f172a;
+      display: flex;
+      justify-content: space-between;
+      align-items: center;
+    }
+
+    table {
+      width: 100%;
+      border-collapse: collapse;
+      font-size: 0.88rem;
+    }
+
+    th, td {
+      padding: 9px 10px;
+      text-align: left;
+      border-bottom: 1px solid var(--border);
+    }
+
+    th {
+      background: #f8fafc;
+      color: var(--muted);
+      font-weight: 700;
+    }
+
+    .quiz-item {
+      margin-bottom: 16px;
+      padding-bottom: 14px;
+      border-bottom: 1px solid var(--border);
+    }
+
+    .quiz-item:last-child {
+      border-bottom: none;
+      margin-bottom: 0;
+    }
+
+    .quiz-q {
+      font-weight: 600;
+      font-size: 0.92rem;
+      margin-bottom: 8px;
+    }
+
+    .quiz-options {
+      display: flex;
+      flex-direction: column;
+      gap: 6px;
+    }
+
+    .quiz-btn {
+      text-align: left;
+      padding: 7px 12px;
+      border: 1px solid var(--border);
+      background: #f8fafc;
+      border-radius: 8px;
+      cursor: pointer;
+      font-size: 0.86rem;
+      transition: all 0.15s;
+    }
+
+    .quiz-btn:hover {
+      background: #eff6ff;
+      border-color: #93c5fd;
+    }
+
+    .quiz-btn.correct {
+      background: #dcfce7;
+      border-color: #16a34a;
+      color: #166534;
+      font-weight: 600;
+    }
+
+    .quiz-btn.wrong {
+      background: #fee2e2;
+      border-color: #dc2626;
+      color: #991b1b;
+    }
+
+    .quiz-feedback {
+      font-size: 0.82rem;
+      margin-top: 6px;
+      font-weight: 600;
+    }
+
+    .takeaway-box {
+      margin-top: 14px;
+      background: #eff6ff;
+      border-left: 4px solid var(--primary);
+      padding: 12px;
+      border-radius: 0 8px 8px 0;
+      font-size: 0.88rem;
+      color: #1e3a8a;
+    }
+  </style>
+</head>
+<body>
+  <div class="container">
+    <header>
+      <h1>⚡ Understanding Voltage &amp; Cell Direction</h1>
+      <p>
+        Explore how voltage changes when you connect <strong>1.5 V cells</strong> in series—either pointing in the
+        <strong>same direction</strong> or in the <strong>opposite direction</strong>—using a virtual voltmeter.
+      </p>
+    </header>
+
+    <!-- Concept Summary -->
+    <section class="info-grid">
+      <div class="info-card">
+        <h3>🔋 What is Voltage?</h3>
+        <p>
+          <strong>Voltage</strong> (also called <em>potential difference</em>) is the electrical "push" that drives
+          current around a circuit. It is measured in <strong>Volts (V)</strong>. One standard cell provides <strong>1.5 V</strong>.
+        </p>
+      </div>
+      <div class="info-card">
+        <h3>🎛️ Using a Voltmeter</h3>
+        <p>
+          A <strong>voltmeter</strong> measures the size of the voltage between two points. It is always connected
+          <strong>in parallel</strong> across the cells, with the red lead (+) and black lead (−).
+        </p>
+      </div>
+      <div class="info-card">
+        <h3>🔄 Why Direction Matters</h3>
+        <p>
+          Cells pointing the <strong>same way</strong> push together, so their voltages <strong>add up</strong>. Cells
+          pointing the <strong>opposite way</strong> push against each other, so their voltages <strong>cancel out (subtract)</strong>.
+        </p>
+      </div>
+    </section>
+
+    <!-- Interactive Workbench -->
+    <section class="lab-panel">
+      <div class="controls-bar">
+        <div class="control-group">
+          <strong>Number of Cells:</strong>
+          <button class="btn btn-secondary" id="removeCellBtn" onclick="changeCellCount(-1)">− Remove Cell</button>
+          <span id="cellCountDisplay" style="font-weight: 700; min-width: 24px; text-align: center;">2</span>
+          <button class="btn btn-primary" id="addCellBtn" onclick="changeCellCount(1)">+ Add Cell</button>
+        </div>
+
+        <div class="control-group">
+          <span style="font-size: 0.85rem; color: var(--muted); font-weight: 600;">Quick Presets:</span>
+          <button class="btn btn-preset" onclick="applyPreset([1, 1])">2 Same (+ +)</button>
+          <button class="btn btn-preset" onclick="applyPreset([1, -1])">2 Opposite (+ −)</button>
+          <button class="btn btn-preset" onclick="applyPreset([1, 1, -1])">3 Mixed (+ + −)</button>
+          <button class="btn btn-preset" onclick="applyPreset([1, 1, 1, 1])">4 Same (+ + + +)</button>
+        </div>
+
+        <button class="btn btn-success" onclick="recordResult()">📋 Record Measurement</button>
+      </div>
+
+      <div class="lab-grid">
+        <!-- Left: Circuit & Cells -->
+        <div class="circuit-stage">
+          <div class="stage-label">
+            <span>Series Cell Holder (Click any cell or "Flip" to reverse its direction)</span>
+            <span style="color: var(--primary);">1 Cell = 1.5 V</span>
+          </div>
+
+          <div class="cells-track-wrapper">
+            <div class="wire-lead wire-black">
+              <span class="wire-label">To V (−)</span>
+            </div>
+
+            <div class="cells-container" id="cellsContainer">
+              <!-- Cells injected here by JS -->
+            </div>
+
+            <div class="wire-lead wire-red">
+              <span class="wire-label">To V (+)</span>
+            </div>
+          </div>
+
+          <div class="math-box">
+            <div class="math-label">Total Voltage Calculation (Potential Difference across ends)</div>
+            <div class="math-equation" id="mathEquation"></div>
+          </div>
+        </div>
+
+        <!-- Right: Voltmeter -->
+        <div class="voltmeter-box">
+          <div class="meter-header">
+            <span>LAB VOLTMETER</span>
+            <span class="meter-symbol">V</span>
+          </div>
+
+          <!-- Analog Needle SVG -->
+          <svg class="analog-dial" viewBox="0 0 220 130">
+            <path d="M 20 110 A 90 90 0 0 1 200 110" fill="#f8fafc" stroke="#475569" stroke-width="3" />
+            <path d="M 35 105 A 75 75 0 0 1 185 105" fill="none" stroke="#94a3b8" stroke-width="2" />
+
+            <g id="dialTicks" font-size="9" font-weight="bold" fill="#334155" text-anchor="middle">
+              <line x1="45" y1="67" x2="36" y2="62" stroke="#dc2626" stroke-width="2" />
+              <text x="27" y="61" fill="#dc2626">-6</text>
+
+              <line x1="72" y1="40" x2="67" y2="31" stroke="#dc2626" stroke-width="2" />
+              <text x="62" y="27" fill="#dc2626">-3</text>
+
+              <line x1="110" y1="30" x2="110" y2="20" stroke="#0f172a" stroke-width="2.5" />
+              <text x="110" y="15">0</text>
+
+              <line x1="148" y1="40" x2="153" y2="31" stroke="#16a34a" stroke-width="2" />
+              <text x="158" y="27" fill="#16a34a">+3</text>
+
+              <line x1="175" y1="67" x2="184" y2="62" stroke="#16a34a" stroke-width="2" />
+              <text x="193" y="61" fill="#16a34a">+6</text>
+            </g>
+
+            <g id="meterNeedle" style="transform-origin: 110px 110px; transition: transform 0.35s cubic-bezier(0.34, 1.56, 0.64, 1);">
+              <line x1="110" y1="110" x2="110" y2="34" stroke="#ef4444" stroke-width="3" stroke-linecap="round" />
+            </g>
+            <circle cx="110" cy="110" r="7" fill="#1e293b" stroke="#94a3b8" stroke-width="2" />
+            <text x="110" y="90" font-size="10" font-weight="bold" fill="#64748b" text-anchor="middle">VOLTS (DC)</text>
+          </svg>
+
+          <!-- Digital Readout -->
+          <div class="digital-screen">
+            <div class="digital-value" id="digitalValue">+3.0 V</div>
+            <div class="digital-sub" id="digitalHint">Cells pushing in the same direction</div>
+          </div>
+
+          <!-- Meter Jacks -->
+          <div class="meter-terminals">
+            <div class="terminal-jack">
+              <div class="jack-circle jack-black"></div>
+              <span>V (−)</span>
+            </div>
+            <div class="terminal-jack">
+              <div class="jack-circle jack-red"></div>
+              <span>V (+)</span>
+            </div>
+          </div>
+        </div>
+      </div>
+    </section>
+
+    <!-- Bottom Section: Results Table & Mini Quiz -->
+    <section class="bottom-grid">
+      <div class="card-panel">
+        <h2>
+          <span>📊 Recorded Measurements</span>
+          <button class="btn btn-secondary" style="font-size: 0.78rem; padding: 4px 10px;" onclick="clearTable()">Clear</button>
+        </h2>
+        <div style="overflow-x: auto;">
+          <table>
+            <thead>
+              <tr>
+                <th>Cells</th>
+                <th>Directions (→ / ←)</th>
+                <th>Size of Voltage</th>
+                <th>Effect</th>
+              </tr>
+            </thead>
+            <tbody id="logBody"></tbody>
+          </table>
+        </div>
+
+        <div class="takeaway-box">
+          <strong>Key Rule:</strong> The <em>size</em> of the total voltage equals the number of forward cells minus the
+          number of reversed cells, multiplied by <strong>1.5 V</strong>. A negative sign (−) on a digital voltmeter simply
+          means the net push is in the opposite direction!
+        </div>
+      </div>
+
+      <div class="card-panel">
+        <h2>🧠 Quick Check</h2>
+
+        <div class="quiz-item" id="q1">
+          <div class="quiz-q">1. Three 1.5 V cells are connected in the <strong>same direction</strong>. What does the voltmeter read?</div>
+          <div class="quiz-options">
+            <button class="quiz-btn" onclick="checkAnswer('q1', this, false, 'Remember: cells in the same direction add together (1.5 + 1.5 + 1.5).')">1.5 V</button>
+            <button class="quiz-btn" onclick="checkAnswer('q1', this, false, 'Close, that would be for 2 cells!')">3.0 V</button>
+            <button class="quiz-btn" onclick="checkAnswer('q1', this, true, 'Correct! 1.5 V + 1.5 V + 1.5 V = 4.5 V.')">4.5 V</button>
+          </div>
+          <div class="quiz-feedback"></div>
+        </div>
+
+        <div class="quiz-item" id="q2">
+          <div class="quiz-q">2. Two 1.5 V cells are connected in <strong>opposite directions</strong> (+ −). What is the total voltage?</div>
+          <div class="quiz-options">
+            <button class="quiz-btn" onclick="checkAnswer('q2', this, true, 'Spot on! +1.5 V and −1.5 V cancel each other out completely to give 0.0 V.')">0.0 V</button>
+            <button class="quiz-btn" onclick="checkAnswer('q2', this, false, 'Think carefully: they push against each other rather than adding up.')">3.0 V</button>
+            <button class="quiz-btn" onclick="checkAnswer('q2', this, false, 'Neither cell wins—they are equal and opposite!')">1.5 V</button>
+          </div>
+          <div class="quiz-feedback"></div>
+        </div>
+
+        <div class="quiz-item" id="q3">
+          <div class="quiz-q">3. Four 1.5 V cells are connected: <strong>3 forward</strong> and <strong>1 backwards</strong>. What is the size of the voltage?</div>
+          <div class="quiz-options">
+            <button class="quiz-btn" onclick="checkAnswer('q3', this, false, '4.5 V is only 3 cells; the 4th backwards cell subtracts 1.5 V.')">4.5 V</button>
+            <button class="quiz-btn" onclick="checkAnswer('q3', this, true, 'Correct! (3 × 1.5 V) − 1.5 V = 3.0 V. One forward cell and the backwards cell cancel out, leaving 2 active cells.')">3.0 V</button>
+            <button class="quiz-btn" onclick="checkAnswer('q3', this, false, '6.0 V would require all 4 cells pointing the same way.')">6.0 V</button>
+          </div>
+          <div class="quiz-feedback"></div>
+        </div>
+      </div>
+    </section>
+  </div>
+
+  <script>
+    const CELL_VOLTAGE = 1.5;
+    const MAX_CELLS = 4;
+    const MIN_CELLS = 1;
+
+    // 1 = forward (+ on right), -1 = reversed (+ on left)
+    let cells = [1, 1];
+
+    let logs = [
+      { count: 2, dirs: "→ → (Same)", voltage: "+3.0 V", note: "Voltages add up" },
+      { count: 2, dirs: "→ ← (Opposite)", voltage: "0.0 V", note: "Voltages cancel out" }
+    ];
+
+    function render() {
+      const container = document.getElementById("cellsContainer");
+      const countDisplay = document.getElementById("cellCountDisplay");
+      const addBtn = document.getElementById("addCellBtn");
+      const removeBtn = document.getElementById("removeCellBtn");
+
+      countDisplay.textContent = cells.length;
+      addBtn.disabled = cells.length >= MAX_CELLS;
+      removeBtn.disabled = cells.length <= MIN_CELLS;
+
+      container.innerHTML = "";
+
+      cells.forEach((dir, index) => {
+        const unit = document.createElement("div");
+        unit.className = "cell-unit";
+
+        const isReversed = dir === -1;
+
+        unit.innerHTML = `
+          <span class="dir-badge ${isReversed ? "dir-reverse" : "dir-forward"}">
+            ${isReversed ? "← −1.5V" : "→ +1.5V"}
+          </span>
+          <div class="battery-graphic ${isReversed ? "reversed" : ""}" onclick="flipCell(${index})" title="Click to flip cell direction">
+            <div class="battery-body">
+              <div class="battery-cap-accent"></div>
+              <span class="term-symbol term-minus">−</span>
+              <span class="volt-tag">1.5V</span>
+              <span class="term-symbol term-plus">+</span>
+            </div>
+            <div class="battery-nub"></div>
+          </div>
+          <button class="flip-btn" onclick="flipCell(${index})">🔄 Flip ${index + 1}</button>
+        `;
+
+        container.appendChild(unit);
+      });
+
+      updateVoltmeterAndMath();
+      renderLogs();
+    }
+
+    function updateVoltmeterAndMath() {
+      const totalVoltage = cells.reduce((sum, dir) => sum + dir * CELL_VOLTAGE, 0);
+
+      const digitalEl = document.getElementById("digitalValue");
+      const hintEl = document.getElementById("digitalHint");
+
+      const sign = totalVoltage > 0 ? "+" : totalVoltage < 0 ? "−" : "";
+      const absVal = Math.abs(totalVoltage).toFixed(1);
+      digitalEl.textContent = `${sign}${absVal} V`;
+
+      if (totalVoltage === 0) {
+        digitalEl.style.color = "#fbbf24";
+        hintEl.textContent = "Cells cancel out completely (0 V)";
+      } else if (totalVoltage < 0) {
+        digitalEl.style.color = "#f87171";
+        hintEl.textContent = `Size is ${absVal} V (pointing towards black lead)`;
+      } else {
+        digitalEl.style.color = "#34d399";
+        const allSame = cells.every(d => d === 1);
+        hintEl.textContent = allSame
+          ? "All cells pushing together in the same direction"
+          : `Size is ${absVal} V (some cells cancelled out)`;
+      }
+
+      const angle = (totalVoltage / 6) * 60;
+      document.getElementById("meterNeedle").style.transform = `rotate(${angle}deg)`;
+
+      const eqEl = document.getElementById("mathEquation");
+      const parts = cells.map(dir => {
+        if (dir === 1) {
+          return `<span class="eq-chip eq-pos">+1.5 V</span>`;
+        } else {
+          return `<span class="eq-chip eq-neg">−1.5 V</span>`;
+        }
+      });
+
+      eqEl.innerHTML = `${parts.join(" <span>+</span> ")} <span>=</span> <span class="eq-chip eq-total">${sign}${absVal} V</span>`;
+    }
+
+    function flipCell(index) {
+      cells[index] = cells[index] * -1;
+      render();
+    }
+
+    function changeCellCount(delta) {
+      const next = cells.length + delta;
+      if (next < MIN_CELLS || next > MAX_CELLS) return;
+
+      if (delta > 0) {
+        cells.push(1);
+      } else {
+        cells.pop();
+      }
+      render();
+    }
+
+    function applyPreset(presetArray) {
+      cells = [...presetArray];
+      render();
+    }
+
+    function recordResult() {
+      const totalVoltage = cells.reduce((sum, dir) => sum + dir * CELL_VOLTAGE, 0);
+      const sign = totalVoltage > 0 ? "+" : totalVoltage < 0 ? "−" : "";
+      const vStr = `${sign}${Math.abs(totalVoltage).toFixed(1)} V`;
+
+      const arrows = cells.map(d => (d === 1 ? "→" : "←")).join(" ");
+      const forwardCount = cells.filter(d => d === 1).length;
+      const reverseCount = cells.filter(d => d === -1).length;
+
+      let pattern = "Mixed";
+      let note = "Partial cancellation";
+
+      if (forwardCount === cells.length || reverseCount === cells.length) {
+        pattern = "Same";
+        note = cells.length === 1 ? "Single cell" : "Voltages add up";
+      } else if (totalVoltage === 0) {
+        pattern = "Opposite";
+        note = "Voltages cancel out";
+      }
+
+      logs.unshift({
+        count: cells.length,
+        dirs: `${arrows} (${pattern})`,
+        voltage: vStr,
+        note: note
+      });
+
+      if (logs.length > 8) logs.pop();
+      renderLogs();
+    }
+
+    function renderLogs() {
+      const tbody = document.getElementById("logBody");
+      if (logs.length === 0) {
+        tbody.innerHTML = `<tr><td colspan="4" style="text-align:center; color:#64748b;">No measurements recorded yet. Click "Record Measurement" above!</td></tr>`;
+        return;
+      }
+
+      tbody.innerHTML = logs
+        .map(
+          item => `
+          <tr>
+            <td><strong>${item.count}</strong></td>
+            <td>${item.dirs}</td>
+            <td><strong>${item.voltage}</strong></td>
+            <td style="color:#475569;">${item.note}</td>
+          </tr>
+        `
+        )
+        .join("");
+    }
+
+    function clearTable() {
+      logs = [];
+      renderLogs();
+    }
+
+    function checkAnswer(qId, btn, isCorrect, explanation) {
+      const container = document.getElementById(qId);
+      const buttons = container.querySelectorAll(".quiz-btn");
+      const feedback = container.querySelector(".quiz-feedback");
+
+      buttons.forEach(b => {
+        b.classList.remove("correct", "wrong");
+      });
+
+      if (isCorrect) {
+        btn.classList.add("correct");
+        feedback.style.color = "#166534";
+      } else {
+        btn.classList.add("wrong");
+        feedback.style.color = "#991b1b";
+      }
+      feedback.textContent = explanation;
+    }
+
+    render();
+  </script>
+</body>
+</html>
