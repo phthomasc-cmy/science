@@ -54,6 +54,13 @@
     button.btn-ai:hover:not(:disabled) { background: #6d28d9; }
     button.btn-ok { background: var(--success); }
     button.btn-ok:hover:not(:disabled) { background: #15803d; }
+    button.btn-toggle {
+      background: #e2e8f0;
+      color: #334155;
+      padding: 6px 12px;
+      font-size: 0.86rem;
+    }
+    button.btn-toggle:hover:not(:disabled) { background: #cbd5e1; }
 
     .card {
       background: var(--card);
@@ -114,6 +121,17 @@
       border-bottom: 2px solid #e2e8f0;
       padding-bottom: 10px;
       margin-bottom: 14px;
+    }
+    .group-card.is-collapsed .group-card-head {
+      border-bottom: none;
+      padding-bottom: 0;
+      margin-bottom: 0;
+    }
+    .group-head-actions {
+      display: flex;
+      align-items: center;
+      gap: 8px;
+      flex-wrap: wrap;
     }
     .badge {
       display: inline-block;
@@ -259,7 +277,13 @@
 
     <!-- 第三部分：學生與 AI 三輪對答完整紀錄 -->
     <section class="card">
-      <h2>(第三部分) 各組「結論改寫與 AI 三輪對答」完整紀錄</h2>
+      <h2>
+        <span>(第三部分) 各組「結論改寫與 AI 三輪對答」完整紀錄</span>
+        <div style="display:flex; gap:8px; flex-wrap:wrap;">
+          <button type="button" class="btn-toggle" onclick="toggleAllGroups(false)">▼ 全部展開</button>
+          <button type="button" class="btn-toggle" onclick="toggleAllGroups(true)">▶ 全部摺疊</button>
+        </div>
+      </h2>
       <div id="dialogueCardsContainer">
         <div style="color:#94a3b8;">尚無對答資料</div>
       </div>
@@ -268,9 +292,10 @@
 
   <script>
     // 教師可於此直接填入 Google Apps Script Web App 網址，免去每次輸入
-    const DEFAULT_GAS_URL = "";
+    const DEFAULT_GAS_URL = "https://script.google.com/macros/s/AKfycbx3GVSopROksvlzauvZKAV_5Ms8-aLDnsuFonPT2mcOSeMdDJeYm66iibExBxWXQiuJ/exec";
     let GAS_URL = DEFAULT_GAS_URL || localStorage.getItem('inquiry_gas_url') || '';
     let currentGroups = [];
+    const collapsedGroups = new Set();
 
     const DEFAULT_CONFIG = {
       experimentTopic: '水溫與溶解時間的關係 (Temperature vs. Dissolving Time)',
@@ -470,6 +495,9 @@
 
       container.innerHTML = currentGroups.map((g, idx) => {
         const history = Array.isArray(g.dialogueHistory) ? g.dialogueHistory : [];
+        const groupKey = g.groupName || String(idx);
+        const isCollapsed = collapsedGroups.has(groupKey);
+
         let badge = '<span class="badge b-wait">尚未開始第三部分</span>';
         if (history.length === 3) badge = '<span class="badge b-done">✅ 已完成全部 3 輪對答</span>';
         else if (history.length > 0) badge = `<span class="badge b-prog">⏳ 對答進行中（完成 ${history.length}/3 輪）</span>`;
@@ -490,35 +518,86 @@
           `).join('');
 
         return `
-          <div class="group-card">
+          <div class="group-card ${isCollapsed ? 'is-collapsed' : ''}" id="groupCard_${idx}">
             <div class="group-card-head">
               <div>
                 <strong style="font-size:1.15rem; margin-right:8px;">${escapeHtml(g.groupName)}</strong>
                 ${badge}
               </div>
-              <button type="button" class="btn-ai" id="btnEval_${idx}"
-                onclick="evaluateGrowth('${escapeHtml(g.groupName)}', ${idx})"
-                ${history.length === 0 ? 'disabled' : ''}>
-                ✨ AI 評估該組改寫成長與課堂追問建議
-              </button>
+              <div class="group-head-actions">
+                <button type="button" class="btn-toggle" id="btnToggle_${idx}" onclick="toggleGroupCard(${idx})">
+                  ${isCollapsed ? '▶ 展開紀錄' : '▼ 摺疊紀錄'}
+                </button>
+                <button type="button" class="btn-ai" id="btnEval_${idx}"
+                  onclick="evaluateGrowth(${idx})"
+                  ${history.length === 0 ? 'disabled' : ''}>
+                  ✨ AI 評估該組改寫成長與課堂追問建議
+                </button>
+              </div>
             </div>
-            ${turnsHtml}
-            <div class="eval-box ${g.teacherAiSummary ? '' : 'hidden'}" id="evalBox_${idx}">
-              <strong>🎓 教師端 AI 綜合評估：</strong>
-              <div id="evalText_${idx}" style="margin-top:4px;">${escapeHtml(g.teacherAiSummary)}</div>
+            <div class="group-card-body ${isCollapsed ? 'hidden' : ''}" id="groupBody_${idx}">
+              ${turnsHtml}
+              <div class="eval-box ${g.teacherAiSummary ? '' : 'hidden'}" id="evalBox_${idx}">
+                <strong>🎓 教師端 AI 綜合評估：</strong>
+                <div id="evalText_${idx}" style="margin-top:4px;">${escapeHtml(g.teacherAiSummary)}</div>
+              </div>
             </div>
           </div>
         `;
       }).join('');
     }
 
-    async function evaluateGrowth(groupName, idx) {
+    function toggleGroupCard(idx) {
+      const g = currentGroups[idx];
+      if (!g) return;
+      const groupKey = g.groupName || String(idx);
+      const card = document.getElementById(`groupCard_${idx}`);
+      const body = document.getElementById(`groupBody_${idx}`);
+      const btn = document.getElementById(`btnToggle_${idx}`);
+
+      if (collapsedGroups.has(groupKey)) {
+        collapsedGroups.delete(groupKey);
+        if (card) card.classList.remove('is-collapsed');
+        if (body) body.classList.remove('hidden');
+        if (btn) btn.textContent = '▼ 摺疊紀錄';
+      } else {
+        collapsedGroups.add(groupKey);
+        if (card) card.classList.add('is-collapsed');
+        if (body) body.classList.add('hidden');
+        if (btn) btn.textContent = '▶ 展開紀錄';
+      }
+    }
+
+    function toggleAllGroups(collapse) {
+      currentGroups.forEach((g, idx) => {
+        const groupKey = g.groupName || String(idx);
+        if (collapse) collapsedGroups.add(groupKey);
+        else collapsedGroups.delete(groupKey);
+      });
+      renderDialogueCards();
+    }
+
+    async function evaluateGrowth(idx) {
+      const g = currentGroups[idx];
+      if (!g) return;
+      const groupName = g.groupName;
       const btn = document.getElementById(`btnEval_${idx}`);
       btn.disabled = true;
       btn.textContent = '✨ 分析三輪成長中...';
       try {
         const res = await apiPost({ action: 'teacher_evaluate_growth', groupName });
         currentGroups[idx] = res.group;
+
+        // 若該組目前為摺疊狀態，評估完成後自動展開以便教師檢視
+        const groupKey = groupName || String(idx);
+        if (collapsedGroups.has(groupKey)) {
+          collapsedGroups.delete(groupKey);
+          document.getElementById(`groupCard_${idx}`)?.classList.remove('is-collapsed');
+          document.getElementById(`groupBody_${idx}`)?.classList.remove('hidden');
+          const toggleBtn = document.getElementById(`btnToggle_${idx}`);
+          if (toggleBtn) toggleBtn.textContent = '▼ 摺疊紀錄';
+        }
+
         document.getElementById(`evalText_${idx}`).textContent = res.summary;
         document.getElementById(`evalBox_${idx}`).classList.remove('hidden');
       } catch (e) {
